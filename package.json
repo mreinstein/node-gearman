@@ -1,0 +1,32 @@
+{
+    "name": "gearman",
+    "preferGlobal": "false",
+    "version": "0.0.1",
+    "author": "Mike Reinstein <reinstein.mike@gmail.com>",
+    "description": "gearman library for nodejs",
+    "contributors": [
+        {
+            "name": "Mike Reinstein",
+            "email": "reinstein.mike@gmail.com"
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/mreinstein/node-gearman.git"
+    },
+    "keywords": [
+        "gearman"
+    ],
+    "dependencies": {
+       "binary": "0.3.x",
+        "coffee-script": "1.3.x",
+	"put": "0.0.x",
+        "streamline": "0.4.x"
+    },
+    "noAnalyze": true,
+    "bundleDependencies": [],
+    "license": "none",
+    "engine": {
+        "node": ">=0.8"
+    }
+}
