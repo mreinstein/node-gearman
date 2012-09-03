@@ -1,14 +1,18 @@
-Yet another gearman library for nodejs
+Gearman Client for nodejs 
+========
 
-I didn't want to create another gearman library, but couldn't find one that matched my needs. I evaluated several:
+I evaluated several existing gearman libraries:
 
-https://github.com/andris9/node-gearman
-https://github.com/andris9/gearnode
-https://github.com/cramerdev/gearman-node
+* https://github.com/andris9/node-gearman
+* https://github.com/andris9/gearnode
+* https://github.com/cramerdev/gearman-node
 
-The above packages provided some great implementation snippets, some of which I'm using in my version. This library is:
-* based on coffeescript
-* strives to be a complete gearman library, supporting all available client and worker features
+None of these are implementations of the full protocol, though they do provide some good code snippets. As of the time of this writing, they haven't been updated in 6+ months. 
 
+This library is an implementation of the full worker and client protocol. It's written in Coffeescript, but you can compile this into javascript and use that if you prefer.
 
+TODO: wire up the server responses
 
+TODO: tests
+
+TODO: usage examples
