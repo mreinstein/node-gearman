@@ -54,6 +54,14 @@ packet_types =
 	SUBMIT_JOB_SCHED   : 35 # unused, may be removed in the future
 	SUBMIT_JOB_EPOCH   : 36 # unused, may be removed in the future
 
+# client events emitted:
+#	JOB_CREATED - server successfully rcv'd the job and queued it to be run by a worker
+#	STATUS_RES - sent in response to a getJobStatus to determine status of background jobs 
+#	WORK_STATUS, WORK_COMPLETE, WORK_FAIL, WORK_EXCEPTION, WORK_DATA, WORK_WARNING
+#	OPTION_RES
+
+# worker events emitted:
+
 
 class Gearman
 	constructor: (host='127.0.0.1', port=4730) ->
@@ -64,16 +72,15 @@ class Gearman
 		@_conn.on 'data', (chunk) =>
 			# decode the data and execute the proper response handler
 			data = @_decodePacket chunk
-			#console.log 'received a packet', data , 'hmm', data.inputData.toString('utf-8')
-			@emit 'packet_received', data
-			# TODO: handle these packet types: JOB_CREATED, ERROR, STATUS_RES, OPTION_RES, NOOP, NO_JOB, JOB_ASSIGN, JOB_ASSIGN_UNIQ
-
+			@_handlePacket data
+			
 		@_conn.on 'error', (error) ->
 			console.log 'error', error
 
 		@_conn.on 'close', ->
 			console.log 'socket closed'
 
+		@_worker_id = null
 		#conn.end()
 		# TODO: figure out what this is in the submit job packet. I didnt see it specified in the gearman spec
 		#unique_id = 'temp-unique-id'
@@ -203,12 +210,6 @@ class Gearman
 		job = @_encodePacket packet_types.GRAB_JOB_UNIQ, '', 'ascii'
 		@_conn.write job, 'ascii'
 
-	sendWorkData: (job_handle, data) ->
-		@_sendPacketSB packet_types.WORK_DATA, job_handle, data
-
-	sendWorkWarning: (job_handle, data) ->
-		@_sendPacketSB packet_types.WORK_WARNING, job_handle, data
-
 	sendWorkStatus: (job_handle, percent_numerator, percent_denominator) ->
 		payload = put().
 			put(new Buffer(job_handle, 'ascii')).
@@ -220,20 +221,27 @@ class Gearman
 		job = @_encodePacket packet_types.WORK_STATUS, payload
 		@_conn.write job
 
-	sendWorkComplete: (job_handle, data) ->
-		@_sendPacketSB packet_types.WORK_COMPLETE, job_handle, data
-
 	sendWorkFail: (job_handle) ->
 		@_sendPacketS packet_types.WORK_FAIL, job_handle
 
+	sendWorkComplete: (job_handle, data) ->
+		@_sendPacketSB packet_types.WORK_COMPLETE, job_handle, data
+
+	sendWorkData: (job_handle, data) ->
+		@_sendPacketSB packet_types.WORK_DATA, job_handle, data
+
 	sendWorkException: (job_handle, exception) ->
 		@_sendPacketSB packet_types.WORK_EXCEPTION, job_handle, exception
+
+	sendWorkWarning: (job_handle, warning) ->
+		@_sendPacketSB packet_types.WORK_WARNING, job_handle, warning
 
 	# sets the worker ID in a job server so monitoring and reporting commands can 
 	# uniquely identify the various workers, and different connections to job 
 	# servers from the same worker.
 	setWorkerId: (id) ->
 		@_sendPacketS packet_types.SET_CLENT_ID, id
+		@_worker_id = id
 
 	# private methods
 	# decode and encode augmented from https://github.com/cramerdev/gearman-node/blob/master/lib/packet.js
@@ -279,6 +287,84 @@ class Gearman
 		word32be(len).
 		put(data).
 		buffer()
+
+	# handle all packets received over the socket
+	_handlePacket: (packet) ->
+		# TODO: handle these packet types: NOOP, NO_JOB, JOB_ASSIGN, JOB_ASSIGN_UNIQ, ECHO_RES,
+		# 		OPTION_RES 
+		if packet.type is packet_types.JOB_CREATED
+			job_handle = packet.inputData.toString() #parse the job handle
+			@emit 'JOB_CREATED', job_handle
+			return
+		if packet.type is packet_types.ERROR
+			error = binary.parse(packet.inputData).
+			scan('code', nb).
+			scan('text').
+			vars
+			@emit 'ERROR', error
+			return
+		if packet.type is packet_types.STATUS_RES
+			o = binary.parse(packet.inputData).
+			scan('handle', nb).
+			scan('known', nb).
+			scan('running', nb).
+			scan('percent_done_num', nb).
+			word8be('percent_done_den').
+			vars
+			o.handle = o.handle.toString()
+			@emit 'STATUS_RES', o
+			return
+		if packet.type is packet_types.WORK_COMPLETE
+			result = binary.parse(packet.inputData).
+			scan('handle', nb).
+			scan('payload').
+			vars
+			@emit 'WORK_COMPLETE', result
+			return
+		if packet.type is packet_types.WORK_DATA
+			result = binary.parse(packet.inputData).
+			scan('handle', nb).
+			scan('payload').
+			vars
+			@emit 'WORK_DATA', result
+			return
+		if packet.type is packet_types.WORK_EXCEPTION
+			result = binary.parse(packet.inputData).
+			scan('handle', nb).
+			scan('exception').
+			vars
+			@emit 'WORK_EXCEPTION', result
+			return
+		if packet.type is packet_types.WORK_WARNING
+			result = binary.parse(packet.inputData).
+			scan('handle', nb).
+			scan('warning').
+			vars
+			@emit 'WORK_WARNING', result
+			return
+		if packet.type is packet_types.WORK_STATUS
+			result = binary.parse(packet.inputData).
+			scan('handle', nb).
+			scan('percent_numerator', nb).
+			scan('percent_denominator').
+			vars
+			@emit 'WORK_STATUS', result
+			return
+		if packet.type is packet_types.WORK_FAIL
+			result = binary.parse(packet.inputData).
+			scan('handle').vars
+			@emit 'WORK_FAIL', result
+			return
+		if packet.type is packet_types.OPTION_RES
+			result = binary.parse(packet.inputData).
+			scan('option_name').vars
+			@emit 'OPTION_RES', result
+			return
+
+
+		#console.log 'rcvd packet', data , data.inputData.toString('utf-8')
+		@emit 'packet_received', data
+		
 
 	# common send function. send a packet with 1 string
 	_sendPacketS = (packet_type, str) ->

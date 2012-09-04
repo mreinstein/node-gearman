@@ -9,10 +9,13 @@ I evaluated several existing gearman libraries:
 
 None of these are implementations of the full protocol, though they do provide some good code snippets. As of the time of this writing, they haven't been updated in 6+ months. 
 
-This library is an implementation of the full worker and client protocol. It's written in Coffeescript, but you can compile this into javascript and use that if you prefer.
+Benefits:
+* full implementation of worker and client functionality
+* very small (thanks to coffeescript goodness)
+* fast
+* fairly low level, lean abstractions over raw gearman protocol
 
-TODO: wire up the server responses
-
-TODO: tests
-
-TODO: usage examples
+TODO
+* wire up the server responses for worker requests
+* tests
+* usage examples
