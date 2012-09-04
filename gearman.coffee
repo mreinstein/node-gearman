@@ -61,6 +61,9 @@ packet_types =
 #	OPTION_RES
 
 # worker events emitted:
+#	NO_JOB
+#	JOB_ASSIGN
+#	JOB_ASSIGN_UNIQ
 
 
 class Gearman
@@ -290,8 +293,7 @@ class Gearman
 
 	# handle all packets received over the socket
 	_handlePacket: (packet) ->
-		# TODO: handle these packet types: NOOP, NO_JOB, JOB_ASSIGN, JOB_ASSIGN_UNIQ, ECHO_RES,
-		# 		OPTION_RES 
+		# client packets
 		if packet.type is packet_types.JOB_CREATED
 			job_handle = packet.inputData.toString() #parse the job handle
 			@emit 'JOB_CREATED', job_handle
@@ -361,11 +363,30 @@ class Gearman
 			@emit 'OPTION_RES', result
 			return
 
-
+		# worker packets
+		if packet.type is packet_types.NO_JOB
+			@emit 'NO_JOB'
+			return
+		if packet.type is packet_types.JOB_ASSIGN
+			result = binary.parse(packet.inputData).
+			scan('handle', nb).
+			scan('func_name', nb).
+			scan('payload').
+			vars
+			@emit 'JOB_ASSIGN', result
+			return
+		if packet.type is packet_types.JOB_ASSIGN_UNIQ
+			result = binary.parse(packet.inputData).
+			scan('handle', nb).
+			scan('func_name', nb).
+			scan('unique_id', nb).
+			scan('payload').
+			vars
+			@emit 'JOB_ASSIGN_UNIQ', result
+			return
+		# TODO: handle these packet types: NOOP, ECHO_RES
 		#console.log 'rcvd packet', data , data.inputData.toString('utf-8')
-		@emit 'packet_received', data
 		
-
 	# common send function. send a packet with 1 string
 	_sendPacketS = (packet_type, str) ->
 		if typeof(str) isnt 'string'
@@ -387,4 +408,3 @@ class Gearman
 			buffer()
 		job = @_encodePacket packet_type, payload
 		@_conn.write job
-

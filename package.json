@@ -18,10 +18,9 @@
         "gearman"
     ],
     "dependencies": {
-       "binary": "0.3.x",
+        "binary": "0.3.x",
         "coffee-script": "1.3.x",
-	"put": "0.0.x",
-        "streamline": "0.4.x"
+        "put": "0.0.x"
     },
     "noAnalyze": true,
     "bundleDependencies": [],

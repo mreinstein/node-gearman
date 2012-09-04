@@ -1,13 +1,11 @@
 Gearman Client for nodejs 
 ========
 
-I evaluated several existing gearman libraries:
+Why Another Gearman Client?
+--------
+I evaluated several existing libraries, but none of them meet my needs. https://github.com/andris9/gearnode has a lot of gearman features, but is not stable and has implementation problems. https://github.com/andris9/node-gearman is more stable, but has a limited feature set. https://github.com/cramerdev/gearman-node has great networking code, but an extremely limited feature set. All of them haven't been updated in almost a year.
 
-* https://github.com/andris9/node-gearman
-* https://github.com/andris9/gearnode
-* https://github.com/cramerdev/gearman-node
-
-None of these are implementations of the full protocol, though they do provide some good code snippets. As of the time of this writing, they haven't been updated in 6+ months. 
+Use this one!
 
 Benefits:
 * full implementation of worker and client functionality
@@ -15,7 +13,17 @@ Benefits:
 * fast
 * fairly low level, lean abstractions over raw gearman protocol
 
+Install
+--------
+```
+git clone https://github.com/mreinstein/node-gearman.git
+cd node-gearman
+npm install
+```
+
 TODO
-* wire up the server responses for worker requests
-* tests
+--------
 * usage examples
+* tests
+* documentation
+
