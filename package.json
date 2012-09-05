@@ -22,6 +22,12 @@
         "coffee-script": "1.3.x",
         "put": "0.0.x"
     },
+    "devDependencies": {
+        "nodeunit" : "0.7.x"
+    },
+    "scripts": {
+        "test": "nodeunit tests"
+    },
     "noAnalyze": true,
     "bundleDependencies": [],
     "license": "none",

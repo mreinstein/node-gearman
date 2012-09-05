@@ -408,3 +408,5 @@ class Gearman
 			buffer()
 		job = @_encodePacket packet_type, payload
 		@_conn.write job
+
+module.exports = Gearman
