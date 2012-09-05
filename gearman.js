@@ -291,6 +291,8 @@ Gearman = (function() {
 
   Gearman.prototype._handlePacket = function(packet) {
     var error, job_handle, o, result, size;
+    size = 0;
+    console.log('got a packet', packet);
     if (packet.type === packet_types.JOB_CREATED) {
       job_handle = packet.inputData.toString();
       this.emit('JOB_CREATED', job_handle);
@@ -308,7 +310,9 @@ Gearman = (function() {
       return;
     }
     if (packet.type === packet_types.WORK_COMPLETE) {
-      result = binary.parse(packet.inputData).scan('handle', nb).scan('payload').vars;
+      result = binary.parse(packet.inputData).scan('handle', nb).tap(function(vars) {
+        return size = packet.inputData.length - (vars.handle.length + 1);
+      }).buffer('payload', size).vars;
       this.emit('WORK_COMPLETE', result);
       return;
     }
@@ -347,7 +351,6 @@ Gearman = (function() {
       return;
     }
     if (packet.type === packet_types.JOB_ASSIGN) {
-      size = 0;
       result = binary.parse(packet.inputData).scan('handle', nb).scan('func_name', nb).tap(function(vars) {
         return size = packet.inputData.length - (vars.handle.length + vars.func_name.length + 2);
       }).buffer('payload', size).vars;

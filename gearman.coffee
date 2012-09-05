@@ -306,7 +306,9 @@ class Gearman
 
 	# handle all packets received over the socket
 	_handlePacket: (packet) ->
-		#console.log 'got a packet!', packet
+		size = 0
+		console.log 'got a packet', packet
+
 		# client packets
 		if packet.type is packet_types.JOB_CREATED
 			job_handle = packet.inputData.toString() #parse the job handle
@@ -333,7 +335,8 @@ class Gearman
 		if packet.type is packet_types.WORK_COMPLETE
 			result = binary.parse(packet.inputData).
 			scan('handle', nb).
-			scan('payload').
+			tap( (vars) -> size = packet.inputData.length - (vars.handle.length + 1) ).
+			buffer('payload', size).
 			vars
 			@emit 'WORK_COMPLETE', result
 			return
@@ -382,7 +385,6 @@ class Gearman
 			@emit 'NO_JOB'
 			return
 		if packet.type is packet_types.JOB_ASSIGN
-			size = 0
 			result = binary.parse(packet.inputData).
 			scan('handle', nb).
 			scan('func_name', nb).
