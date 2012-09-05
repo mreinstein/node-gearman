@@ -54,10 +54,10 @@ exports.testMagicHeader = function(test){
 	// test 2 good headers (REQ and RES)
 	var good_buffer1 = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, packet_types.RESET_ABILITIES, 0, 0, 0, 0]);
 	var result = this.g._decodePacket(good_buffer1);
-	test.ok(result.type == packet_types.RESET_ABILITIES, 'REQ magic header fails');
+	test.equal(result.type, packet_types.RESET_ABILITIES, 'REQ magic header fails');
 	var good_buffer2 = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, packet_types.RESET_ABILITIES, 0, 0, 0, 0]);
 	result = this.g._decodePacket(good_buffer1);
-	test.ok(result.type == packet_types.RESET_ABILITIES, 'RES magic header fails');
+	test.equal(result.type, packet_types.RESET_ABILITIES, 'RES magic header fails');
 
 	test.done();
 };
@@ -87,7 +87,7 @@ exports.testValidPacketType = function(test){
 	{
 		good_buffer = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, p_type, 0, 0, 0, 0]);
 		result = this.g._decodePacket(good_buffer);
-		test.ok(result.type == p_type, 'packet type ' + p_type + ' failed to decode');
+		test.equal(result.type, p_type, 'packet type ' + p_type + ' failed to decode');
 	}
 
 	test.done();

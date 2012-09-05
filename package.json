@@ -2,14 +2,8 @@
     "name": "gearman",
     "preferGlobal": "false",
     "version": "0.0.1",
-    "author": "Mike Reinstein <reinstein.mike@gmail.com>",
-    "description": "gearman library for nodejs",
-    "contributors": [
-        {
-            "name": "Mike Reinstein",
-            "email": "reinstein.mike@gmail.com"
-        }
-    ],
+    "author": "Mike Reinstein",
+    "description": "gearman client and worker library",
     "repository": {
         "type": "git",
         "url": "https://github.com/mreinstein/node-gearman.git"

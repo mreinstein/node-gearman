@@ -12,6 +12,8 @@ net = require 'net'
 EventEmitter = require('events').EventEmitter
 utillib = require 'util'
 
+nb = new Buffer [0] # null buffer
+
 req = new Buffer 'REQ', 'ascii'
 req_magic = new Buffer [0x00, 0x52, 0x45, 0x51]  # \0REQ
 res_magic = new Buffer [0, 0x52, 0x45, 0x53]  # \0RES
@@ -80,30 +82,13 @@ class Gearman
 		if @_conn
 			@_conn.end()
 
-	connect: ->
-		console.log 'weeeeEEE', @port, @host
-		# connect socket to server
-		@_conn = net.createConnection @port, @host
-		@_conn.setKeepAlive true
-
-		@_conn.on 'data', (chunk) =>
-			# decode the data and execute the proper response handler
-			data = @_decodePacket chunk
-			@_handlePacket data
-			
-		@_conn.on 'error', (error) ->
-			console.log 'error', error
-
-		@_conn.on 'close', ->
-			console.log 'socket closed'
-
 	# public gearman client/worker functions
 	# send an echo packet. Server will respond with ECHO_RES packet. mostly debug
 	echo: ->
 		# let's try sending an ECHO packet
 		encoding = 'utf-8'
 		echo = @_encodePacket packet_types.ECHO_REQ, 'Hello World!', encoding
-		@_conn.write echo, encoding
+		@_send echo, encoding
 		
 
 	# public gearman client functions
@@ -150,6 +135,7 @@ class Gearman
 		if !packet_type
 			throw new Error 'invalid background or priority setting'
 
+		unique_id = '' # TODO: what is this used for
 		payload = put().
 		put(new Buffer(func_name, 'ascii')).
 		word8(0).
@@ -159,7 +145,7 @@ class Gearman
 		buffer()
 
 		job = @_encodePacket packet_type, payload, options.encoding
-		@_conn.write job, options.encoding
+		@_send job, options.encoding
 
 	# public gearman worker functions
 
@@ -186,7 +172,7 @@ class Gearman
 			word32be(timeout).
 			buffer()
 			job = @_encodePacket packet_types.CAN_DO_TIMEOUT, payload
-		@_conn.write job, encoding
+		@_send job, encoding
 
 	# tell a server that the worker is no longer capable of handling a function
 	removeFunction: (func_name) ->
@@ -196,24 +182,24 @@ class Gearman
 	# with addFunction
 	resetAbilities: ->
 		job = @_encodePacket packet_types.RESET_ABILITIES, '', 'ascii'
-		@_conn.write job, 'ascii'
+		@_send job, 'ascii'
 
 	# TODO: maybe this is private, only called internally?
 	# notify the server that this worker is going to sleep. wake up with a NOOP 
 	# when new work is ready
 	preSleep: ->
 		job = @_encodePacket packet_types.PRE_SLEEP, '', 'ascii'
-		@_conn.write job, 'ascii'
+		@_send job, 'ascii'
 
 	# tell the server we want a new job
 	grabJob: ->
-		job = _encodePacket packet_types.GRAB_JOB, '', 'ascii'
-		@_conn.write job, 'ascii'
+		job = @_encodePacket packet_types.GRAB_JOB
+		@_send job, 'ascii'
 
 	# same as grabJob, but grabs jobs with unique ids assigned to them
 	grabUniqueJob: ->
 		job = @_encodePacket packet_types.GRAB_JOB_UNIQ, '', 'ascii'
-		@_conn.write job, 'ascii'
+		@_send job, 'ascii'
 
 	sendWorkStatus: (job_handle, percent_numerator, percent_denominator) ->
 		payload = put().
@@ -224,7 +210,7 @@ class Gearman
 			put(new Buffer(percent_denominator, 'ascii')).
 			buffer()
 		job = @_encodePacket packet_types.WORK_STATUS, payload
-		@_conn.write job
+		@_send job
 
 	sendWorkFail: (job_handle) ->
 		@_sendPacketS packet_types.WORK_FAIL, job_handle
@@ -248,13 +234,31 @@ class Gearman
 		@_sendPacketS packet_types.SET_CLENT_ID, id
 		@_worker_id = id
 
+
 	# private methods
+	_connect: ->
+		# connect socket to server
+		@_conn = net.createConnection @port, @host
+		@_conn.setKeepAlive true
+
+		@_conn.on 'data', (chunk) =>
+			# decode the data and execute the proper response handler
+			data = @_decodePacket chunk
+			@_handlePacket data
+			
+		@_conn.on 'error', (error) ->
+			console.log 'error', error
+
+		@_conn.on 'close', ->
+			console.log 'socket closed'
+
+
 	# decode and encode augmented from https://github.com/cramerdev/gearman-node/blob/master/lib/packet.js
 	# converts binary buffer packet to object
 	_decodePacket: (buf) ->
 		if !Buffer.isBuffer buf
 			throw new Error 'argument must be a buffer'
-	
+
 		size = 0
 		o = binary.parse(buf).
 			word32bu('reqType').
@@ -302,6 +306,7 @@ class Gearman
 
 	# handle all packets received over the socket
 	_handlePacket: (packet) ->
+		#console.log 'got a packet!', packet
 		# client packets
 		if packet.type is packet_types.JOB_CREATED
 			job_handle = packet.inputData.toString() #parse the job handle
@@ -377,11 +382,14 @@ class Gearman
 			@emit 'NO_JOB'
 			return
 		if packet.type is packet_types.JOB_ASSIGN
+			size = 0
 			result = binary.parse(packet.inputData).
 			scan('handle', nb).
 			scan('func_name', nb).
-			scan('payload').
+			tap( (vars) -> size = packet.inputData.length - (vars.handle.length + vars.func_name.length + 2) ).
+			buffer('payload', size).
 			vars
+			result.func_name = result.func_name.toString 'utf-8'
 			@emit 'JOB_ASSIGN', result
 			return
 		if packet.type is packet_types.JOB_ASSIGN_UNIQ
@@ -396,18 +404,24 @@ class Gearman
 		# TODO: handle these packet types: NOOP, ECHO_RES
 		#console.log 'rcvd packet', data , data.inputData.toString('utf-8')
 		
+	# common socket I/O
+	_send: (data, encoding=null) ->
+		if !@_conn
+			@_connect()
+		@_conn.write data, encoding
+
 	# common send function. send a packet with 1 string
-	_sendPacketS = (packet_type, str) ->
+	_sendPacketS: (packet_type, str) ->
 		if typeof(str) isnt 'string'
 			throw new Error 'parameter 1 must be a string'
 		payload = put().
 			put(new Buffer(str, 'ascii')).
 			buffer()
 		job = @_encodePacket packet_type, payload
-		@_conn.write job
+		@_send job
 
 	# common send function. send a packet with 1 string followed by 1 Buffer
-	_sendPacketSB = (packet_type, str, buf) ->
+	_sendPacketSB: (packet_type, str, buf) ->
 		if !Buffer.isBuffer(buf)
 			buf = new Buffer(buf)
 		payload = put().
@@ -416,7 +430,7 @@ class Gearman
 			put(buf).
 			buffer()
 		job = @_encodePacket packet_type, payload
-		@_conn.write job
+		@_send job
 
 module.exports.Gearman = Gearman
 module.exports.packet_types = packet_types

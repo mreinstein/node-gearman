@@ -1,37 +1,16 @@
-Gearman Client for nodejs 
-========
+###
 
-Why Another Nodejs Gearman Client?
---------
-I evaluated several existing libraries on github, but they either lack features, or stability, or recent updates. Features:
+some basic usage examples for the cookbook
 
-* full implementation of worker and client
-* lean abstraction over raw gearman protocol
-* lots of unit tests
-* fast
-* small
+###
+
+'use strict'
+
+Gearman = require('./Gearman').Gearman
 
 
-Install
---------
-```
-npm install https://github.com/mreinstein/node-gearman.git
-```
+# basic client: create a job and determine if it's been completed
 
-Test
---------
-```
-npm test
-```
-
-
-Cookbook
-========
-
-Here are some usage patterns:
-Basic Client: create a job and determine if it's been completed
---------
-```coffeescript
 client = new Gearman()  # assumes localhost, port 4730
 
 # listen for finished jobs to be finished
@@ -40,11 +19,9 @@ client.on 'WORK_COMPLETE', (job) ->
 
 # submit a job to reverse a string with normal priority in the foreground
 client.submitJob 'upper', 'Hello, World!'
-```
 
-Basic Worker: create a worker, register a function, and handle work
---------
-```coffeescript
+
+# basic worker: create a worker, register a function, and handle work
 worker = new Gearman()
 
 # listen for the server to assign jobs
@@ -60,5 +37,3 @@ worker.addFunction 'upper'
 
 # get a job to work on
 worker.grabJob()
-```
-

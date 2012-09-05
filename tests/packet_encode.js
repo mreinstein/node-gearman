@@ -76,14 +76,13 @@ exports.testPacketLength = function(test){
 
 	type = ''
 	var b = this.g._encodePacket(packet_types.CAN_DO, '');
-    test.expect(1);
-    test.ok(true, "this assertion should pass");
+    test.equal(b.length, 12, 'packet length is wrong for encoded CAN_DO packet');
     test.done();
 };
 
 exports.testCAN_DO = function(test){
 	var b = this.g._encodePacket(packet_types.CAN_DO, 'test function');
-	test.ok((b.length == 25), 'CAN_DO packet is wrong length');
+	test.equal(b.length, 25, 'CAN_DO packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0,1,0,0,0,13, 0x74, 0x65, 0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e]);
     test.ok( b.equals(data), 'encoded CAN_DO packet is malformed');
@@ -101,7 +100,7 @@ exports.testCANT_DO = function(test){
 
 exports.testRESET_ABILITIES = function(test){
 	var b = this.g._encodePacket(packet_types.RESET_ABILITIES);
-	test.ok((b.length == 12), 'RESET_PACKET packet is wrong length');
+	test.equal(b.length, 12, 'RESET_PACKET packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0,3,0,0,0,0]);
     test.ok( b.equals(data), 'encoded RESET_ABILITIES packet is malformed');
@@ -128,7 +127,7 @@ exports.testSUBMIT_JOB = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.SUBMIT_JOB, payload2);
-	test.ok((b.length == 39), 'SUBMIT_JOB packet is wrong length');
+	test.equal(b.length, 39, 'SUBMIT_JOB packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0,7,0,0,0, 0x1b, 0x74, 0x65, 
     	0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00,
@@ -140,7 +139,7 @@ exports.testSUBMIT_JOB = function(test){
 
 exports.testGRAB_JOB = function(test){
 	var b = this.g._encodePacket(packet_types.GRAB_JOB);
-	test.ok((b.length == 12), 'GRAB_JOB packet is wrong length');
+	test.equal(b.length, 12, 'GRAB_JOB packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0,9,0,0,0,0]);
     test.ok( b.equals(data), 'encoded GRAB_JOB packet is malformed');
@@ -160,7 +159,7 @@ exports.testWORK_STATUS = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.WORK_STATUS, payload);
-	test.ok((b.length == 33), 'WORK_STATUS packet is wrong length');
+	test.equal(b.length, 33, 'WORK_STATUS packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0, 12, 0, 0, 0, 21, 0x74, 0x65,
      0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c, 
@@ -179,7 +178,7 @@ exports.testWORK_COMPLETE = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.WORK_COMPLETE, payload);
-	test.ok((b.length == 44), 'WORK_COMPLETE packet is wrong length');
+	test.equal(b.length, 44, 'WORK_COMPLETE packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0, 13, 0, 0, 0, 32, 0x74, 0x65,
     0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c, 
@@ -196,7 +195,7 @@ exports.testWORK_FAIL = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.WORK_FAIL, payload);
-	test.ok((b.length == 27), 'WORK_FAIL packet is wrong length');
+	test.equal(b.length , 27, 'WORK_FAIL packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0, 14, 0, 0, 0, 15, 0x74, 0x65,
     0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c, 0x65 ]);
@@ -241,7 +240,7 @@ exports.testSUBMIT_JOB_BG = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.SUBMIT_JOB_BG, payload2);
-	test.ok((b.length == 39), 'SUBMIT_JOB_BG packet is wrong length');
+	test.equal(b.length, 39, 'SUBMIT_JOB_BG packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0,18,0,0,0, 0x1b, 0x74, 0x65, 
     	0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00,
@@ -264,7 +263,7 @@ exports.testSUBMIT_JOB_HIGH = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.SUBMIT_JOB_HIGH, payload2);
-	test.ok((b.length == 39), 'SUBMIT_JOB_HIGH packet is wrong length');
+	test.equal(b.length, 39, 'SUBMIT_JOB_HIGH packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0,21,0,0,0, 0x1b, 0x74, 0x65, 
     	0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00,
@@ -278,7 +277,7 @@ exports.testSET_CLIENT_ID = function(test){
 	var payload = new Buffer('test client id', 'ascii');
 
 	var b = this.g._encodePacket(packet_types.SET_CLIENT_ID, payload);
-	test.ok((b.length == 26), 'SET_CLIENT_ID packet is wrong length');
+	test.equal(b.length, 26, 'SET_CLIENT_ID packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0, 22, 0, 0, 0, 14, 0x74, 0x65,
     0x73, 0x74, 0x20, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x20, 0x69, 0x64 ]);
@@ -295,7 +294,7 @@ exports.testCAN_DO_TIMEOUT = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.CAN_DO_TIMEOUT, payload);
-	test.ok((b.length == 30), 'CAN_DO_TIMEOUT packet is wrong length');
+	test.equal(b.length, 30, 'CAN_DO_TIMEOUT packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0, 23, 0, 0, 0, 18, 0x74, 0x65,
      0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00, 
@@ -306,7 +305,7 @@ exports.testCAN_DO_TIMEOUT = function(test){
 
 exports.testALL_YOURS = function(test){
 	var b = this.g._encodePacket(packet_types.ALL_YOURS);
-	test.ok((b.length == 12), 'ALL_YOURS packet is wrong length');
+	test.equal(b.length, 12, 'ALL_YOURS packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0,24,0,0,0,0]);
     test.ok( b.equals(data), 'encoded ALL_YOURS packet is malformed');
@@ -323,7 +322,7 @@ exports.testWORK_EXCEPTION = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.WORK_EXCEPTION, payload);
-	test.ok((b.length == 43), 'WORK_EXCEPTION packet is wrong length');
+	test.equal(b.length, 43, 'WORK_EXCEPTION packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0, 25, 0, 0, 0, 31, 0x74, 0x65,
      0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c, 
@@ -337,7 +336,7 @@ exports.testOPTION_REQ = function(test){
 	var payload = new Buffer('exceptions');
 
 	var b = this.g._encodePacket(packet_types.OPTION_REQ, payload);
-	test.ok((b.length == 22), 'OPTION_REQ packet is wrong length');
+	test.equal(b.length, 22, 'OPTION_REQ packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0, 26, 0, 0, 0, 10, 0x65, 0x78,
     	0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73 ]);
@@ -355,7 +354,7 @@ exports.testWORK_DATA = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.WORK_DATA, payload);
-	test.ok((b.length == 40), 'WORK_DATA packet is wrong length');
+	test.equal(b.length, 40, 'WORK_DATA packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0, 28, 0, 0, 0, 28, 0x74, 0x65,
      0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c, 
@@ -375,7 +374,7 @@ exports.testWORK_WARNING = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.WORK_WARNING, payload);
-	test.ok((b.length == 40), 'WORK_WARNING packet is wrong length');
+	test.equal(b.length, 40, 'WORK_WARNING packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0, 29, 0, 0, 0, 28, 0x74, 0x65,
      0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c, 
@@ -386,7 +385,7 @@ exports.testWORK_WARNING = function(test){
 
 exports.testGRAB_JOB_UNIQ = function(test){
 	var b = this.g._encodePacket(packet_types.GRAB_JOB_UNIQ);
-	test.ok((b.length == 12), 'GRAB_JOB_UNIQ packet is wrong length');
+	test.equal(b.length, 12, 'GRAB_JOB_UNIQ packet is wrong length');
 	
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0, 30, 0, 0, 0, 0 ]);
     test.ok( b.equals(data), 'encoded GRAB_JOB_UNIQ packet is malformed');
@@ -406,7 +405,7 @@ exports.testSUBMIT_JOB_HIGH_BG = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.SUBMIT_JOB_HIGH_BG, payload2);
-	test.ok((b.length == 39), 'SUBMIT_JOB_HIGH_BG packet is wrong length');
+	test.equal(b.length, 39, 'SUBMIT_JOB_HIGH_BG packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0,32,0,0,0, 0x1b, 0x74, 0x65, 
     	0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00,
@@ -429,7 +428,7 @@ exports.testSUBMIT_JOB_LOW = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.SUBMIT_JOB_LOW, payload2);
-	test.ok((b.length == 39), 'SUBMIT_JOB_LOW packet is wrong length');
+	test.equal(b.length, 39, 'SUBMIT_JOB_LOW packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0,33,0,0,0, 0x1b, 0x74, 0x65, 
     	0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00,
@@ -452,7 +451,7 @@ exports.testSUBMIT_JOB_LOW_BG = function(test){
 		buffer();
 
 	var b = this.g._encodePacket(packet_types.SUBMIT_JOB_LOW_BG, payload2);
-	test.ok((b.length == 39), 'SUBMIT_JOB_LOW_BG packet is wrong length');
+	test.equal(b.length, 39, 'SUBMIT_JOB_LOW_BG packet is wrong length');
 
     var data = new Buffer([0,0x52,0x45,0x51,0,0,0,34,0,0,0, 0x1b, 0x74, 0x65, 
     	0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00,
