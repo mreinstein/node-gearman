@@ -17,7 +17,7 @@ client = new Gearman()  # assumes localhost, port 4730
 client.on 'WORK_COMPLETE', (job) ->
 	console.log 'job completed, result:', job.payload.toString('utf-8')
 
-# submit a job to reverse a string with normal priority in the foreground
+# submit a job to uppercase a string with normal priority in the foreground
 client.submitJob 'upper', 'Hello, World!'
 
 
@@ -32,10 +32,14 @@ worker.on 'JOB_ASSIGN', (job) ->
 	worker.sendWorkComplete job.handle, result
 
 # if no jobs are found, ping every 10 seconds for a new one
-worker.on 'NO_JOBS', ->
+worker.on 'NO_JOB', ->
 	console.log 'no work found, sleeping'
 	# no work available, wait and try again
-	setTimeout -> worker.grabJob(), 10000
+	setTimeout(
+		=> worker.grabJob()
+		10000
+	)
+
 # register the functions this worker is capable of
 worker.addFunction 'upper'
 

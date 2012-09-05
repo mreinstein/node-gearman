@@ -307,7 +307,7 @@ class Gearman
 	# handle all packets received over the socket
 	_handlePacket: (packet) ->
 		size = 0
-		console.log 'got a packet', packet
+		#console.log 'got a packet', packet
 
 		# client packets
 		if packet.type is packet_types.JOB_CREATED

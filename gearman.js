@@ -292,7 +292,6 @@ Gearman = (function() {
   Gearman.prototype._handlePacket = function(packet) {
     var error, job_handle, o, result, size;
     size = 0;
-    console.log('got a packet', packet);
     if (packet.type === packet_types.JOB_CREATED) {
       job_handle = packet.inputData.toString();
       this.emit('JOB_CREATED', job_handle);
