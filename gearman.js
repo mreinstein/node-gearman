@@ -65,14 +65,23 @@ Gearman = (function() {
   var _sendPacketS, _sendPacketSB;
 
   function Gearman(host, port) {
+    this.host = host != null ? host : '127.0.0.1';
+    this.port = port != null ? port : 4730;
+    this._worker_id = null;
+  }
+
+  utillib.inherits(Gearman, EventEmitter);
+
+  Gearman.prototype.close = function() {
+    if (this._conn) {
+      return this._conn.end();
+    }
+  };
+
+  Gearman.prototype.connect = function() {
     var _this = this;
-    if (host == null) {
-      host = '127.0.0.1';
-    }
-    if (port == null) {
-      port = 4730;
-    }
-    this._conn = net.createConnection(port, host);
+    console.log('weeeeEEE', this.port, this.host);
+    this._conn = net.createConnection(this.port, this.host);
     this._conn.setKeepAlive(true);
     this._conn.on('data', function(chunk) {
       var data;
@@ -82,13 +91,10 @@ Gearman = (function() {
     this._conn.on('error', function(error) {
       return console.log('error', error);
     });
-    this._conn.on('close', function() {
+    return this._conn.on('close', function() {
       return console.log('socket closed');
     });
-    this._worker_id = null;
-  }
-
-  utillib.inherits(Gearman, EventEmitter);
+  };
 
   Gearman.prototype.echo = function() {
     var echo, encoding;
@@ -171,9 +177,7 @@ Gearman = (function() {
       throw new Error('timeout must be greater than zero');
     }
     if (timeout === 0) {
-      encoding = 'ascii';
-      payload = put().put(new Buffer(func_name, encoding)).buffer();
-      job = this._encodePacket(packet_types.CAN_DO, payload, encoding);
+      job = this._encodePacket(packet_types.CAN_DO, func_name, encoding);
     } else {
       encoding = null;
       payload = put().put(new Buffer(func_name, 'ascii')).word8(0).word32be(timeout).buffer();
@@ -262,8 +266,14 @@ Gearman = (function() {
 
   Gearman.prototype._encodePacket = function(type, data, encoding) {
     var len;
+    if (data == null) {
+      data = null;
+    }
     if (encoding == null) {
       encoding = null;
+    }
+    if (!(data != null)) {
+      data = new Buffer(0);
     }
     len = data.length;
     if (!Buffer.isBuffer(data)) {
@@ -367,4 +377,6 @@ Gearman = (function() {
 
 })();
 
-module.exports = Gearman;
+module.exports.Gearman = Gearman;
+
+module.exports.packet_types = packet_types;

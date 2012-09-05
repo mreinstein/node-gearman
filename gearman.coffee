@@ -67,9 +67,23 @@ packet_types =
 
 
 class Gearman
-	constructor: (host='127.0.0.1', port=4730) ->
+	constructor: (@host='127.0.0.1', @port=4730) ->
+		@_worker_id = null
+		
+		# TODO: figure out what this is in the submit job packet. I didnt see it specified in the gearman spec
+		#unique_id = 'temp-unique-id'
+
+	utillib.inherits @, EventEmitter
+
+	# close the socket connection and cleanup
+	close: ->
+		if @_conn
+			@_conn.end()
+
+	connect: ->
+		console.log 'weeeeEEE', @port, @host
 		# connect socket to server
-		@_conn = net.createConnection port, host
+		@_conn = net.createConnection @port, @host
 		@_conn.setKeepAlive true
 
 		@_conn.on 'data', (chunk) =>
@@ -82,13 +96,6 @@ class Gearman
 
 		@_conn.on 'close', ->
 			console.log 'socket closed'
-
-		@_worker_id = null
-		#conn.end()
-		# TODO: figure out what this is in the submit job packet. I didnt see it specified in the gearman spec
-		#unique_id = 'temp-unique-id'
-
-	utillib.inherits @, EventEmitter
 
 	# public gearman client/worker functions
 	# send an echo packet. Server will respond with ECHO_RES packet. mostly debug
@@ -170,12 +177,7 @@ class Gearman
 			throw new Error 'timeout must be greater than zero'
 
 		if timeout == 0
-			encoding = 'ascii'
-			payload = put().
-			put(new Buffer(func_name, encoding)).
-			buffer()
-			job = @_encodePacket packet_types.CAN_DO, payload, encoding
-			
+			job = @_encodePacket packet_types.CAN_DO, func_name, encoding
 		else
 			encoding = null
 			payload = put().
@@ -274,7 +276,10 @@ class Gearman
 		o
 
 	# construct a gearman binary packet
-	_encodePacket: (type, data, encoding=null) ->
+	_encodePacket: (type, data=null, encoding=null) ->
+		if !data?
+			data = new Buffer 0
+
 		len = data.length
 		if !Buffer.isBuffer data
 			data = new Buffer data, encoding
@@ -282,7 +287,8 @@ class Gearman
 		# check type
 		if type < 1 or type > 36
 			throw new Error 'invalid packet type'
-		# decode the packet
+
+		# encode the packet
 		put().
 		word8(0).
 		put(req).
@@ -409,4 +415,5 @@ class Gearman
 		job = @_encodePacket packet_type, payload
 		@_conn.write job
 
-module.exports = Gearman
+module.exports.Gearman = Gearman
+module.exports.packet_types = packet_types

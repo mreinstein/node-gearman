@@ -23,7 +23,8 @@
         "put": "0.0.x"
     },
     "devDependencies": {
-        "nodeunit" : "0.7.x"
+        "nodeunit" : "0.7.x",
+        "buffertools": "1.1.x"
     },
     "scripts": {
         "test": "nodeunit tests"
