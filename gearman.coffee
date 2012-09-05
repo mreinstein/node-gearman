@@ -252,6 +252,9 @@ class Gearman
 	# decode and encode augmented from https://github.com/cramerdev/gearman-node/blob/master/lib/packet.js
 	# converts binary buffer packet to object
 	_decodePacket: (buf) ->
+		if !Buffer.isBuffer buf
+			throw new Error 'argument must be a buffer'
+	
 		size = 0
 		o = binary.parse(buf).
 			word32bu('reqType').

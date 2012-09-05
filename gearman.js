@@ -248,6 +248,9 @@ Gearman = (function() {
 
   Gearman.prototype._decodePacket = function(buf) {
     var o, size;
+    if (!Buffer.isBuffer(buf)) {
+      throw new Error('argument must be a buffer');
+    }
     size = 0;
     o = binary.parse(buf).word32bu('reqType').word32bu('type').word32bu('size').tap(function(vars) {
       return size = vars.size;
