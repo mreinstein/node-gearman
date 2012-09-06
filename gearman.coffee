@@ -80,31 +80,16 @@ packet_types =
 class Gearman
 	constructor: (@host='127.0.0.1', @port=4730) ->
 		@_worker_id = null
-		# TODO: figure out what this is in the submit job packet. I didnt see it specified in the gearman spec
-		#unique_id = 'temp-unique-id'
 
-	utillib.inherits @, EventEmitter
+		@_connected = false
 
-	# close the socket connection and cleanup
-	close: ->
-		if @_conn
-			@_conn.end()
-
-	connect: (callback) ->
-		# connect socket to server
-		@_conn = net.createConnection @port, @host, () =>
-			console.log 'ok got connection'
-			# connection established
-			#@_conn.setKeepAlive true
-			callback @_conn
-
-		@_conn.on 'timeout', () ->
-			console.log 'socket timed out'
-
+		@_conn = new net.Socket()
+		
 		@_conn.on 'data', (chunk) =>
+			console.log 'got data packet', chunk
+			
 			# decode the data and execute the proper response handler
-			data = @_decodePacket chunk
-			@_handlePacket data
+			@_handlePacket @_decodePacket(chunk)
 			
 		@_conn.on 'error', (error) ->
 			console.log 'error', error
@@ -112,6 +97,26 @@ class Gearman
 		@_conn.on 'close', (had_transmission_error) ->
 			console.log 'socket closed'
 
+		@_conn.on 'timeout', () ->
+			console.log 'socket timed out'
+
+		# TODO: figure out what this is in the submit job packet. I didnt see it specified in the gearman spec
+		#unique_id = 'temp-unique-id'
+
+	utillib.inherits @, EventEmitter
+
+	# close the socket connection and cleanup
+	close: ->
+		if @_connected
+			@_conn.end()
+
+	connect: (callback) ->
+		@_connected = true
+		# connect socket to server
+		@_conn.connect @port, @host, () =>
+			# connection established
+			#@_conn.setKeepAlive true
+			callback()
 
 	# public gearman client/worker functions
 	# send an echo packet. Server will respond with ECHO_RES packet. mostly debug
@@ -174,10 +179,8 @@ class Gearman
 		put(data).
 		buffer()
 
-		console.log 'sendamafying dat jobbbbb'
 		job = @_encodePacket packet_type, payload, options.encoding
 		@_send job, options.encoding
-		console.log 'yep'
 
 	# public gearman worker functions
 
@@ -195,7 +198,7 @@ class Gearman
 			throw new Error 'timeout must be greater than zero'
 
 		if timeout == 0
-			job = @_encodePacket packet_types.CAN_DO, func_name, encoding
+			job = @_encodePacket packet_types.CAN_DO, func_name
 		else
 			payload = put().
 			put(new Buffer(func_name, 'utf-8')).
@@ -203,7 +206,7 @@ class Gearman
 			word32be(timeout).
 			buffer()
 			job = @_encodePacket packet_types.CAN_DO_TIMEOUT, payload
-		@_send job, encoding
+		@_send job
 
 	# tell a server that the worker is no longer capable of handling a function
 	removeFunction: (func_name) ->
@@ -294,6 +297,8 @@ class Gearman
 		# check size
 		if o.size != o.inputData.length
 			throw new Error 'invalid packet size, mismatches data length'
+
+		delete o.reqType    # remove magic header, unused
 		o
 
 	# construct a gearman binary packet
@@ -320,7 +325,7 @@ class Gearman
 
 	# handle all packets received over the socket
 	_handlePacket: (packet) ->
-		console.log 'packet', packet
+		#console.log 'packet type:', packet.type
 		# client and worker packets
 		if packet.type is packet_types.ECHO_RES
 			result = @_parsePacket packet.inputData, 'B'
@@ -343,38 +348,31 @@ class Gearman
 			return
 		if packet.type is packet_types.WORK_COMPLETE
 			result = @_parsePacket packet.inputData, 'sb'
-			result = { handle : result[0], payload: result[1] }
-			@emit 'WORK_COMPLETE', result
+			@emit 'WORK_COMPLETE', { handle : result[0], payload: result[1] }
 			return
 		if packet.type is packet_types.WORK_DATA
 			result = @_parsePacket packet.inputData, 'sb'
-			result = { handle : result[0], payload: result[1] }
-			@emit 'WORK_DATA', result
+			@emit 'WORK_DATA', { handle : result[0], payload: result[1] }
 			return
 		if packet.type is packet_types.WORK_EXCEPTION
 			result = @_parsePacket packet.inputData, 'ss'
-			result = { handle : result[0], exception: result[1] }
-			@emit 'WORK_EXCEPTION', result
+			@emit 'WORK_EXCEPTION', { handle : result[0], exception: result[1] }
 			return
 		if packet.type is packet_types.WORK_WARNING
 			result = @_parsePacket packet.inputData, 'ss'
-			result = { handle : result[0], warning: result[1] }
-			@emit 'WORK_WARNING', result
+			@emit 'WORK_WARNING', { handle : result[0], warning: result[1] }
 			return
 		if packet.type is packet_types.WORK_STATUS
 			result = @_parsePacket packet.inputData, 'sss'
-			result = { handle : result[0], percent_numerator: result[1], percent_denominator: result[2] }
-			@emit 'WORK_STATUS', result
+			@emit 'WORK_STATUS', { handle : result[0], percent_num: result[1], percent_den: result[2] }
 			return
 		if packet.type is packet_types.WORK_FAIL
 			result = @_parsePacket packet.inputData, 's'
-			result = { handle: result[0] }
-			@emit 'WORK_FAIL', result
+			@emit 'WORK_FAIL', { handle: result[0] }
 			return
 		if packet.type is packet_types.OPTION_RES
 			result = @_parsePacket packet.inputData, 's'
-			result = { option_name: result[0] }
-			@emit 'OPTION_RES', result
+			@emit 'OPTION_RES', { option_name: result[0] }
 			return
 
 		# worker packets
@@ -383,13 +381,11 @@ class Gearman
 			return
 		if packet.type is packet_types.JOB_ASSIGN
 			result = @_parsePacket packet.inputData, 'ssB'
-			result = { handle : result[0], func_name: result[1], payload: result[2] }
-			@emit 'JOB_ASSIGN', result
+			@emit 'JOB_ASSIGN', { handle : result[0], func_name: result[1], payload: result[2] }
 			return
 		if packet.type is packet_types.JOB_ASSIGN_UNIQ
-			result = @_parsePacket packet.inputData, 'sssB'
-			result = { handle : result[0], func_name: result[1], unique_id: result[2], payload: result[3] }
-			@emit 'JOB_ASSIGN_UNIQ', result
+			p = @_parsePacket packet.inputData, 'sssB'
+			@emit 'JOB_ASSIGN_UNIQ', { handle : p[0], func_name: p[1], unique_id: p[2], payload: p[3] }
 			return
 		if packet.type is packet_types.NOOP
 			@emit 'NOOP'
@@ -427,7 +423,7 @@ class Gearman
 
 	# common socket I/O
 	_send: (data, encoding=null) ->
-		if !@_conn
+		if !@_connected
 			throw new Error 'Cannot send packets before connecting. Please connect first.'
 		@_conn.write data, encoding
 

@@ -38,15 +38,18 @@ npm test
 ```coffeescript
 Gearman = require('./Gearman').Gearman
 
-client = new Gearman()  # assumes localhost, port 4730
+# basic client: create a job and determine if it's been completed
+client = new Gearman() # assumes localhost, port 4730  
 
 # handle finished jobs
 client.on 'WORK_COMPLETE', (job) ->
-	console.log 'job completed, result:', job.payload.toString('utf-8')
+	console.log 'job completed, result:', job.payload.toString()
 	client.close()
 
-# submit a job to uppercase a string with normal priority in the foreground
-client.submitJob 'upper', 'Hello, World!'
+# connect to the gearman server
+client.connect ->
+	# submit a job to uppercase a string with normal priority in the foreground
+	client.submitJob 'upper', 'Hello, World!'
 ```
 
 
@@ -54,8 +57,6 @@ client.submitJob 'upper', 'Hello, World!'
 
 ```coffeescript
 Gearman = require('./Gearman').Gearman
-
-worker = new Gearman()
 
 # handle jobs assigned by the server
 worker.on 'JOB_ASSIGN', (job) ->
@@ -70,11 +71,13 @@ worker.on 'JOB_ASSIGN', (job) ->
 # grab a job when the server signals one is available
 worker.on 'NOOP', ->
 	worker.grabJob()
-	
-# register the functions this worker is capable of
-worker.addFunction 'upper'
 
-# tell the server the worker is going to sleep, waiting for work
-worker.preSleep()
+# connect to the gearman server	
+worker.connect ->
+	# register the functions this worker is capable of
+	worker.addFunction 'upper'
+
+	# tell the server the worker is going to sleep, waiting for work
+	worker.preSleep()
 ```
 

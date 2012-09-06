@@ -15,24 +15,21 @@ client = new Gearman() # assumes localhost, port 4730
 # handle finished jobs
 client.on 'WORK_COMPLETE', (job) ->
 	console.log 'job completed, result:', job.payload.toString()
-	#client.close()
+	client.close()
 
 # connect to the gearman server
 client.connect ->
 	# submit a job to uppercase a string with normal priority in the foreground
 	client.submitJob 'upper', 'Hello, World!'
-	client.submitJob 'upper', 'Hello, mang!'
-	client.submitJob 'upper', 'Hello, duber!'
+	client.echo 'deadlines and commitments'
 
-
-###
 # basic worker: create a worker, register a function, and handle work
 worker = new Gearman()
 
 # handle jobs assigned by the server
 worker.on 'JOB_ASSIGN', (job) ->
 	console.log job.func_name + ' job assigned to this worker'
-	result = job.payload.toString('utf-8').toUpperCase()
+	result = job.payload.toString().toUpperCase()
 	# notify the server the job is done
 	worker.sendWorkComplete job.handle, result
 
@@ -50,4 +47,3 @@ worker.connect ->
 
 	# tell the server the worker is going to sleep, waiting for work
 	worker.preSleep()
-###
