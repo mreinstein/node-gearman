@@ -61,23 +61,25 @@ packet_types =
 #packet_formats =
 #	CAN_DO 			   : [ 'a', ['buh'] ]
 
+# common client and worker events emitted:
+#	ECHO_RES - sent in response to ECHO_REQ. mostly used for debug
 
 # client events emitted:
-#	JOB_CREATED - server successfully rcv'd the job and queued it to be run by a worker
+#	JOB_CREATED - server rcv'd the job and queued it to be run by a worker
 #	STATUS_RES - sent in response to a getJobStatus to determine status of background jobs 
 #	WORK_STATUS, WORK_COMPLETE, WORK_FAIL, WORK_EXCEPTION, WORK_DATA, WORK_WARNING
 #	OPTION_RES
 
 # worker events emitted:
-#	NO_JOB
-#	JOB_ASSIGN
-#	JOB_ASSIGN_UNIQ
+#	NO_JOB - server has no available jobs 
+#	JOB_ASSIGN - server assigned a job to the worker
+#	JOB_ASSIGN_UNIQ - same as JOB_ASSIGN_UNIQ
+#	NOOP - the server has available jobs
 
 
 class Gearman
 	constructor: (@host='127.0.0.1', @port=4730) ->
 		@_worker_id = null
-		
 		# TODO: figure out what this is in the submit job packet. I didnt see it specified in the gearman spec
 		#unique_id = 'temp-unique-id'
 
@@ -88,13 +90,35 @@ class Gearman
 		if @_conn
 			@_conn.end()
 
+	connect: (callback) ->
+		# connect socket to server
+		@_conn = net.createConnection @port, @host, () =>
+			console.log 'ok got connection'
+			# connection established
+			#@_conn.setKeepAlive true
+			callback @_conn
+
+		@_conn.on 'timeout', () ->
+			console.log 'socket timed out'
+
+		@_conn.on 'data', (chunk) =>
+			# decode the data and execute the proper response handler
+			data = @_decodePacket chunk
+			@_handlePacket data
+			
+		@_conn.on 'error', (error) ->
+			console.log 'error', error
+
+		@_conn.on 'close', (had_transmission_error) ->
+			console.log 'socket closed'
+
+
 	# public gearman client/worker functions
 	# send an echo packet. Server will respond with ECHO_RES packet. mostly debug
-	echo: ->
+	echo: (payload) ->
 		# let's try sending an ECHO packet
-		encoding = 'utf-8'
-		echo = @_encodePacket packet_types.ECHO_REQ, 'Hello World!', encoding
-		@_send echo, encoding
+		echo = @_encodePacket packet_types.ECHO_REQ, payload
+		@_send echo
 		
 
 	# public gearman client functions
@@ -150,16 +174,18 @@ class Gearman
 		put(data).
 		buffer()
 
+		console.log 'sendamafying dat jobbbbb'
 		job = @_encodePacket packet_type, payload, options.encoding
 		@_send job, options.encoding
+		console.log 'yep'
 
 	# public gearman worker functions
 
 	# tell the server that this worker is capable of doing work
 	# @param string func_name name of the function that is supported
-	# @param int timeout (optional) specify a max time this function may run on a 
-	# 		 worker. if not done within timeout, server notifies client of timeout
-	# 		 0 means no timeout
+	# @param int timeout (optional) specify a max time this function may run on
+	#		 a worker. if not done within timeout, server notifies client of 
+	#		 timeout 0 means no timeout
 	addFunction: (func_name, timeout=0) ->
 		if typeof(func_name) isnt 'string'
 			throw new Error 'function name must be a string'
@@ -171,9 +197,8 @@ class Gearman
 		if timeout == 0
 			job = @_encodePacket packet_types.CAN_DO, func_name, encoding
 		else
-			encoding = null
 			payload = put().
-			put(new Buffer(func_name, 'ascii')).
+			put(new Buffer(func_name, 'utf-8')).
 			word8(0).
 			word32be(timeout).
 			buffer()
@@ -190,11 +215,10 @@ class Gearman
 		job = @_encodePacket packet_types.RESET_ABILITIES, '', 'ascii'
 		@_send job, 'ascii'
 
-	# TODO: maybe this is private, only called internally?
-	# notify the server that this worker is going to sleep. wake up with a NOOP 
-	# when new work is ready
+	# notify the server that this worker is going to sleep. Server will send a  
+	# NOOP packet when new work is ready
 	preSleep: ->
-		job = @_encodePacket packet_types.PRE_SLEEP, '', 'ascii'
+		job = @_encodePacket packet_types.PRE_SLEEP
 		@_send job, 'ascii'
 
 	# tell the server we want a new job
@@ -242,22 +266,6 @@ class Gearman
 
 
 	# private methods
-	_connect: ->
-		# connect socket to server
-		@_conn = net.createConnection @port, @host
-		@_conn.setKeepAlive true
-
-		@_conn.on 'data', (chunk) =>
-			# decode the data and execute the proper response handler
-			data = @_decodePacket chunk
-			@_handlePacket data
-			
-		@_conn.on 'error', (error) ->
-			console.log 'error', error
-
-		@_conn.on 'close', ->
-			console.log 'socket closed'
-
 
 	# decode and encode augmented from https://github.com/cramerdev/gearman-node/blob/master/lib/packet.js
 	# converts binary buffer packet to object
@@ -312,16 +320,21 @@ class Gearman
 
 	# handle all packets received over the socket
 	_handlePacket: (packet) ->
-		#console.log 'got a packet', packet
+		console.log 'packet', packet
+		# client and worker packets
+		if packet.type is packet_types.ECHO_RES
+			result = @_parsePacket packet.inputData, 'B'
+			@emit 'ECHO_RES', result[0]
+			return
+
 		# client packets
 		if packet.type is packet_types.JOB_CREATED
 			job_handle = packet.inputData.toString() #parse the job handle
 			@emit 'JOB_CREATED', job_handle
 			return
 		if packet.type is packet_types.ERROR
-			result = @_parsePacket packet.inputData, 'ss'
-			result = { code : result[0], text: result[1] }
-			@emit 'ERROR', error
+			result = @_parsePacket packet.inputData, 'ss' # code, text
+			@emit 'ERROR', result[0], result[1]
 			return
 		if packet.type is packet_types.STATUS_RES
 			result = @_parsePacket packet.inputData, 'ssss8'
@@ -378,8 +391,8 @@ class Gearman
 			result = { handle : result[0], func_name: result[1], unique_id: result[2], payload: result[3] }
 			@emit 'JOB_ASSIGN_UNIQ', result
 			return
-		# TODO: handle these packet types: NOOP, ECHO_RES
-		#console.log 'rcvd packet', data , data.inputData.toString('utf-8')
+		if packet.type is packet_types.NOOP
+			@emit 'NOOP'
 		
 	# parse a buffer based on a format string
 	_parsePacket: (packet, format_string) ->
@@ -415,7 +428,7 @@ class Gearman
 	# common socket I/O
 	_send: (data, encoding=null) ->
 		if !@_conn
-			@_connect()
+			throw new Error 'Cannot send packets before connecting. Please connect first.'
 		@_conn.write data, encoding
 
 	# common send function. send a packet with 1 string

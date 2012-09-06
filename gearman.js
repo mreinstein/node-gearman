@@ -79,11 +79,32 @@ Gearman = (function() {
     }
   };
 
-  Gearman.prototype.echo = function() {
-    var echo, encoding;
-    encoding = 'utf-8';
-    echo = this._encodePacket(packet_types.ECHO_REQ, 'Hello World!', encoding);
-    return this._send(echo, encoding);
+  Gearman.prototype.connect = function(callback) {
+    var _this = this;
+    this._conn = net.createConnection(this.port, this.host, function() {
+      console.log('ok got connection');
+      return callback(_this._conn);
+    });
+    this._conn.on('timeout', function() {
+      return console.log('socket timed out');
+    });
+    this._conn.on('data', function(chunk) {
+      var data;
+      data = _this._decodePacket(chunk);
+      return _this._handlePacket(data);
+    });
+    this._conn.on('error', function(error) {
+      return console.log('error', error);
+    });
+    return this._conn.on('close', function(had_transmission_error) {
+      return console.log('socket closed');
+    });
+  };
+
+  Gearman.prototype.echo = function(payload) {
+    var echo;
+    echo = this._encodePacket(packet_types.ECHO_REQ, payload);
+    return this._send(echo);
   };
 
   Gearman.prototype.getJobStatus = function(handle) {
@@ -142,12 +163,14 @@ Gearman = (function() {
     }
     unique_id = '';
     payload = put().put(new Buffer(func_name, 'ascii')).word8(0).put(new Buffer(unique_id, 'ascii')).word8(0).put(data).buffer();
+    console.log('sendamafying dat jobbbbb');
     job = this._encodePacket(packet_type, payload, options.encoding);
-    return this._send(job, options.encoding);
+    this._send(job, options.encoding);
+    return console.log('yep');
   };
 
   Gearman.prototype.addFunction = function(func_name, timeout) {
-    var encoding, job, payload;
+    var job, payload;
     if (timeout == null) {
       timeout = 0;
     }
@@ -163,8 +186,7 @@ Gearman = (function() {
     if (timeout === 0) {
       job = this._encodePacket(packet_types.CAN_DO, func_name, encoding);
     } else {
-      encoding = null;
-      payload = put().put(new Buffer(func_name, 'ascii')).word8(0).word32be(timeout).buffer();
+      payload = put().put(new Buffer(func_name, 'utf-8')).word8(0).word32be(timeout).buffer();
       job = this._encodePacket(packet_types.CAN_DO_TIMEOUT, payload);
     }
     return this._send(job, encoding);
@@ -182,7 +204,7 @@ Gearman = (function() {
 
   Gearman.prototype.preSleep = function() {
     var job;
-    job = this._encodePacket(packet_types.PRE_SLEEP, '', 'ascii');
+    job = this._encodePacket(packet_types.PRE_SLEEP);
     return this._send(job, 'ascii');
   };
 
@@ -230,23 +252,6 @@ Gearman = (function() {
     return this._worker_id = id;
   };
 
-  Gearman.prototype._connect = function() {
-    var _this = this;
-    this._conn = net.createConnection(this.port, this.host);
-    this._conn.setKeepAlive(true);
-    this._conn.on('data', function(chunk) {
-      var data;
-      data = _this._decodePacket(chunk);
-      return _this._handlePacket(data);
-    });
-    this._conn.on('error', function(error) {
-      return console.log('error', error);
-    });
-    return this._conn.on('close', function() {
-      return console.log('socket closed');
-    });
-  };
-
   Gearman.prototype._decodePacket = function(buf) {
     var o, size;
     if (!Buffer.isBuffer(buf)) {
@@ -291,6 +296,12 @@ Gearman = (function() {
 
   Gearman.prototype._handlePacket = function(packet) {
     var job_handle, result;
+    console.log('packet', packet);
+    if (packet.type === packet_types.ECHO_RES) {
+      result = this._parsePacket(packet.inputData, 'B');
+      this.emit('ECHO_RES', result[0]);
+      return;
+    }
     if (packet.type === packet_types.JOB_CREATED) {
       job_handle = packet.inputData.toString();
       this.emit('JOB_CREATED', job_handle);
@@ -298,11 +309,7 @@ Gearman = (function() {
     }
     if (packet.type === packet_types.ERROR) {
       result = this._parsePacket(packet.inputData, 'ss');
-      result = {
-        code: result[0],
-        text: result[1]
-      };
-      this.emit('ERROR', error);
+      this.emit('ERROR', result[0], result[1]);
       return;
     }
     if (packet.type === packet_types.STATUS_RES) {
@@ -402,6 +409,10 @@ Gearman = (function() {
         payload: result[3]
       };
       this.emit('JOB_ASSIGN_UNIQ', result);
+      return;
+    }
+    if (packet.type === packet_types.NOOP) {
+      return this.emit('NOOP');
     }
   };
 
@@ -449,7 +460,7 @@ Gearman = (function() {
       encoding = null;
     }
     if (!this._conn) {
-      this._connect();
+      throw new Error('Cannot send packets before connecting. Please connect first.');
     }
     return this._conn.write(data, encoding);
   };

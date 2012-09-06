@@ -10,37 +10,44 @@ Gearman = require('./Gearman').Gearman
 
 
 # basic client: create a job and determine if it's been completed
-client = new Gearman()  # assumes localhost, port 4730
+client = new Gearman() # assumes localhost, port 4730  
 
 # handle finished jobs
 client.on 'WORK_COMPLETE', (job) ->
-	console.log 'job completed, result:', job.payload.toString('utf-8')
+	console.log 'job completed, result:', job.payload.toString()
+	#client.close()
 
-# submit a job to uppercase a string with normal priority in the foreground
-client.submitJob 'upper', 'Hello, World!'
+# connect to the gearman server
+client.connect ->
+	# submit a job to uppercase a string with normal priority in the foreground
+	client.submitJob 'upper', 'Hello, World!'
+	client.submitJob 'upper', 'Hello, mang!'
+	client.submitJob 'upper', 'Hello, duber!'
 
 
-
+###
 # basic worker: create a worker, register a function, and handle work
 worker = new Gearman()
 
-# listen for the server to assign jobs
+# handle jobs assigned by the server
 worker.on 'JOB_ASSIGN', (job) ->
+	console.log job.func_name + ' job assigned to this worker'
 	result = job.payload.toString('utf-8').toUpperCase()
 	# notify the server the job is done
 	worker.sendWorkComplete job.handle, result
 
-# if no jobs are found, ping every 10 seconds for a new one
-worker.on 'NO_JOB', ->
-	console.log 'no work found, sleeping'
-	# no work available, wait and try again
-	setTimeout(
-		=> worker.grabJob()
-		10000
-	)
+	# go back to sleep, telling the server we're ready for more work
+	worker.preSleep()
 
-# register the functions this worker is capable of
-worker.addFunction 'upper'
+# grab a job when the server signals one is available
+worker.on 'NOOP', ->
+	worker.grabJob()
 
-# get a job to work on
-worker.grabJob()
+# connect to the gearman server	
+worker.connect ->
+	# register the functions this worker is capable of
+	worker.addFunction 'upper'
+
+	# tell the server the worker is going to sleep, waiting for work
+	worker.preSleep()
+###

@@ -1,11 +1,10 @@
-Gearman Client for nodejs 
-========
+# Gearman Client for nodejs 
 
-Why Another Nodejs Gearman Client?
---------
+
+##Why Another Nodejs Gearman Client?
 I evaluated several existing libraries on github, but they either lack features, or stability, or recent updates. 
 
-PROS:
+### PROS:
 
 * full implementation of worker and client
 * lean abstraction over raw gearman protocol
@@ -14,67 +13,68 @@ PROS:
 * small
 * fully interoperable with gearman clients and workers written in other languages
 
-CONS:
+### CONS:
 
-* lacks elegant high level abstractions for doing work. A bit more boilerplate to write.
+* lacks elegant high level abstractions for doing work. A bit more boilerplate to write
+* only supports 1 server connection per client/worker
 * documentation is lacking. This is a priority and it's being addressed
 
 
-Install
---------
+## Install
 ```
 npm install https://github.com/mreinstein/node-gearman.git
 ```
 
-Test
---------
+## Test
 ```
 npm test
 ```
 
 
-Cookbook
-========
+## Cookbook
 
-Here are some usage patterns:
-Basic Client: create a job and handle it's completion
---------
+### create a client, create 1 job, and handle it's completion
+
 ```coffeescript
+Gearman = require('./Gearman').Gearman
+
 client = new Gearman()  # assumes localhost, port 4730
 
 # handle finished jobs
 client.on 'WORK_COMPLETE', (job) ->
 	console.log 'job completed, result:', job.payload.toString('utf-8')
+	client.close()
 
 # submit a job to uppercase a string with normal priority in the foreground
 client.submitJob 'upper', 'Hello, World!'
 ```
 
-Basic Worker: create a worker, register a function, and handle work
---------
+
+### create a worker, register a function, and handle jobs
+
 ```coffeescript
-# basic worker: create a worker, register a function, and handle work
+Gearman = require('./Gearman').Gearman
+
 worker = new Gearman()
 
-# listen for the server to assign jobs
+# handle jobs assigned by the server
 worker.on 'JOB_ASSIGN', (job) ->
-	result = job.payload.toString('utf-8').toUpperCase()
+	console.log job.func_name + ' job assigned to this worker'
+	result = job.payload.toString().toUpperCase()
 	# notify the server the job is done
 	worker.sendWorkComplete job.handle, result
 
-# if no jobs are found, ping every 10 seconds for a new one
-worker.on 'NO_JOB', ->
-	console.log 'no work found, sleeping'
-	# no work available, wait and try again
-	setTimeout(
-		=> worker.grabJob()
-		10000
-	)
+	# go back to sleep, telling the server we're ready for more work
+	worker.preSleep()
 
+# grab a job when the server signals one is available
+worker.on 'NOOP', ->
+	worker.grabJob()
+	
 # register the functions this worker is capable of
 worker.addFunction 'upper'
 
-# get a job to work on
-worker.grabJob()
+# tell the server the worker is going to sleep, waiting for work
+worker.preSleep()
 ```
 
