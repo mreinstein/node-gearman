@@ -73,7 +73,6 @@ Gearman = (function() {
     this._connected = false;
     this._conn = new net.Socket();
     this._conn.on('data', function(chunk) {
-      console.log('got data packet', chunk);
       return _this._handlePacket(_this._decodePacket(chunk));
     });
     this._conn.on('error', function(error) {
@@ -124,7 +123,7 @@ Gearman = (function() {
   };
 
   Gearman.prototype.submitJob = function(func_name, data, options) {
-    var job, lookup_table, packet_type, payload, sig, unique_id;
+    var job, lookup_table, packet_type, payload, sig;
     if (data == null) {
       data = null;
     }
@@ -142,6 +141,9 @@ Gearman = (function() {
       'hightrue': packet_types.SUBMIT_JOB_HIGH_BG,
       'highfalse': packet_types.SUBMIT_JOB_HIGH
     };
+    if (!options.unique_id) {
+      options.unique_id = this._uniqueId();
+    }
     if (!options.background) {
       options.background = false;
     }
@@ -163,8 +165,7 @@ Gearman = (function() {
     if (!packet_type) {
       throw new Error('invalid background or priority setting');
     }
-    unique_id = '';
-    payload = put().put(new Buffer(func_name, 'ascii')).word8(0).put(new Buffer(unique_id, 'ascii')).word8(0).put(data).buffer();
+    payload = put().put(new Buffer(func_name, 'ascii')).word8(0).put(new Buffer(options.unique_id, 'ascii')).word8(0).put(data).buffer();
     job = this._encodePacket(packet_type, payload, options.encoding);
     return this._send(job, options.encoding);
   };
@@ -248,7 +249,7 @@ Gearman = (function() {
   };
 
   Gearman.prototype.setWorkerId = function(id) {
-    this._sendPacketS(packet_types.SET_CLENT_ID, id);
+    this._sendPacketS(packet_types.SET_CLIENT_ID, id);
     return this._worker_id = id;
   };
 
@@ -321,7 +322,7 @@ Gearman = (function() {
         percent_done_num: result[3],
         percent_done_den: result[4]
       };
-      this.emit('STATUS_RES', o);
+      this.emit('STATUS_RES', result);
       return;
     }
     if (packet.type === packet_types.WORK_COMPLETE) {
@@ -474,6 +475,18 @@ Gearman = (function() {
     payload = put().put(new Buffer(str, 'ascii')).word8(0).put(buf).buffer();
     job = this._encodePacket(packet_type, payload);
     return this._send(job);
+  };
+
+  Gearman.prototype._uniqueId = function(length) {
+    var id;
+    if (length == null) {
+      length = 12;
+    }
+    id = "";
+    while (id.length < length) {
+      id += Math.random().toString(36).substr(2);
+    }
+    return id.substr(0, length);
   };
 
   return Gearman;

@@ -218,6 +218,23 @@ exports.testNO_JOB = function(test){
 	this.g._handlePacket(packet);
 };
 
+exports.testSTATUS_RES = function(test){
+	var good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
+		packet_types.STATUS_RES, 0x00, 0x00, 0x00, 0x11, 0x48, 0x3a, 0x6d, 
+		0x69, 0x6b, 0x65, 0x3a, 0x39, 0x39, 0x00, 0x31, 0x00, 0x30, 0x00, 0x30,
+		0x00, 0x30]);
+	this.g.on ('STATUS_RES', function(job){
+		test.equal(job.handle, 'H:mike:99');
+		test.equal(job.known, 1);
+		test.equal(job.running, 0);
+		test.equal(job.percent_done_num, 0);
+		test.equal(job.percent_done_den, 48);
+		test.done();
+	});
+	packet = this.g._decodePacket(good_buffer);
+	this.g._handlePacket(packet);
+};
+
 //console.log ('wind', good_buffer.toString());
 // NO_JOB        00 52 45 53 00 00 00 0a 00 00 00 00
 // ECHO_RES      00 52 45 53 00 00 00 11 00 00 00 19 64 65 61 64 6c 69 6e 65 73 20 61 6e 64 20 63 6f 6d 6d 69 74 6d 65 6e 74 73
@@ -225,4 +242,4 @@ exports.testNO_JOB = function(test){
 // JOB_CREATED   00 52 45 53 00 00 00 08 00 00 00 09 48 3a 6d 69 6b 65 3a 37 37
 // JOB_ASSIGN    00 52 45 53 00 00 00 0b 00 00 00 1d 48 3a 6d 69 6b 65 3a 37 37 00 75 70 70 65 72 00 48 65 6c 6c 6f 2c 20 57 6f 72 6c 64 21
 // WORK_COMPLETE 00 52 45 53 00 00 00 0d 00 00 00 17 48 3a 6d 69 6b 65 3a 37 37 00 48 45 4c 4c 4f 2c 20 57 4f 52 4c 44 21
-
+// STATUS_RES    00 52 45 53 00 00 00 14 00 00 00 11 48 3a 6d 69 6b 65 3a 39 39 00 31 00 30 00 30 00 30

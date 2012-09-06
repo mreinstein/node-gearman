@@ -86,8 +86,9 @@ class Gearman
 		@_conn = new net.Socket()
 		
 		@_conn.on 'data', (chunk) =>
-			console.log 'got data packet', chunk
-			
+			#console.log 'got data packet', chunk
+			#console.log 'to string:', chunk.toString()
+
 			# decode the data and execute the proper response handler
 			@_handlePacket @_decodePacket(chunk)
 			
@@ -100,8 +101,6 @@ class Gearman
 		@_conn.on 'timeout', () ->
 			console.log 'socket timed out'
 
-		# TODO: figure out what this is in the submit job packet. I didnt see it specified in the gearman spec
-		#unique_id = 'temp-unique-id'
 
 	utillib.inherits @, EventEmitter
 
@@ -153,6 +152,15 @@ class Gearman
 			'hightrue' : packet_types.SUBMIT_JOB_HIGH_BG
 			'highfalse' : packet_types.SUBMIT_JOB_HIGH
 
+		# gearmand maintains a jobs hash, with the key being unique_id. setting
+		# this allows clients to ensure that only 1 job is present for a given 
+		# id at any moment. This can be used to reduce the stampeding herd 
+		# problem, where several clients would try to submit an identical job
+		# into gearman. By setting a unique id for the job, only 1 job instance 
+		# will be present in gearmand at any time.
+		if !options.unique_id
+			# no unique_id is set, assume this job is unique and generate a key
+			options.unique_id = @_uniqueId()
 		if !options.background
 			options.background = false
 		if !options.priority
@@ -170,11 +178,10 @@ class Gearman
 		if !packet_type
 			throw new Error 'invalid background or priority setting'
 
-		unique_id = '' # TODO: what is this used for
 		payload = put().
 		put(new Buffer(func_name, 'ascii')).
 		word8(0).
-		put(new Buffer(unique_id, 'ascii')).
+		put(new Buffer(options.unique_id, 'ascii')).
 		word8(0).
 		put(data).
 		buffer()
@@ -264,7 +271,7 @@ class Gearman
 	# uniquely identify the various workers, and different connections to job 
 	# servers from the same worker.
 	setWorkerId: (id) ->
-		@_sendPacketS packet_types.SET_CLENT_ID, id
+		@_sendPacketS packet_types.SET_CLIENT_ID, id
 		@_worker_id = id
 
 
@@ -344,7 +351,7 @@ class Gearman
 		if packet.type is packet_types.STATUS_RES
 			result = @_parsePacket packet.inputData, 'ssss8'
 			result = { handle : result[0], known: result[1], running: result[2], percent_done_num: result[3], percent_done_den: result[4] }
-			@emit 'STATUS_RES', o
+			@emit 'STATUS_RES', result
 			return
 		if packet.type is packet_types.WORK_COMPLETE
 			result = @_parsePacket packet.inputData, 'sb'
@@ -448,6 +455,12 @@ class Gearman
 			buffer()
 		job = @_encodePacket packet_type, payload
 		@_send job
+
+	# utility function to generate a random alphanumeric format_string
+	_uniqueId: (length = 12) ->
+		id = ""
+		id += Math.random().toString(36).substr(2) while id.length < length
+		id.substr 0, length
 
 module.exports.Gearman = Gearman
 module.exports.packet_types = packet_types

@@ -1,6 +1,6 @@
 ###
 
-some basic usage examples for the cookbook
+some basic usage example
 
 ###
 
@@ -15,13 +15,13 @@ client = new Gearman() # assumes localhost, port 4730
 # handle finished jobs
 client.on 'WORK_COMPLETE', (job) ->
 	console.log 'job completed, result:', job.payload.toString()
-	client.close()
+	#client.close()
 
 # connect to the gearman server
 client.connect ->
 	# submit a job to uppercase a string with normal priority in the foreground
 	client.submitJob 'upper', 'Hello, World!'
-	client.echo 'deadlines and commitments'
+
 
 # basic worker: create a worker, register a function, and handle work
 worker = new Gearman()
