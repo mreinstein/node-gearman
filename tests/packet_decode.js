@@ -125,3 +125,21 @@ exports.testValidPacketSize = function(test){
 	test.done();
 };
 
+
+exports.testParsePacket = function(test){
+	var good_buffer = new Buffer([ 0x74, 0x65, 0x73, 0x74, 0x20, 0x66, 0x75, 
+							   0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00, 0x00, 
+							   0x74, 0x65, 0x73, 0x74, 0x20, 0x70, 0x61, 0x79, 
+							   0x6c, 0x6f, 0x61, 0x64 ]);
+	result = this.g._parsePacket(good_buffer, 's8s');
+	test.equal(result['0'], 'test function');
+	test.equal(result['1'], 0);
+	test.equal(result['2'], 'test payload');
+
+	good_buffer = new Buffer([ 0x74 ]);
+	result = this.g._parsePacket(good_buffer, '8');
+	test.equal(result['0'], 116);
+
+	test.done();
+};
+

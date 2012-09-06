@@ -56,6 +56,12 @@ packet_types =
 	SUBMIT_JOB_SCHED   : 35 # unused, may be removed in the future
 	SUBMIT_JOB_EPOCH   : 36 # unused, may be removed in the future
 
+# TODO: consider using this dense format to specify packet formats. trades 
+# 		clarity for brevity 
+#packet_formats =
+#	CAN_DO 			   : [ 'a', ['buh'] ]
+
+
 # client events emitted:
 #	JOB_CREATED - server successfully rcv'd the job and queued it to be run by a worker
 #	STATUS_RES - sent in response to a getJobStatus to determine status of background jobs 
@@ -306,77 +312,55 @@ class Gearman
 
 	# handle all packets received over the socket
 	_handlePacket: (packet) ->
-		size = 0
 		#console.log 'got a packet', packet
-
 		# client packets
 		if packet.type is packet_types.JOB_CREATED
 			job_handle = packet.inputData.toString() #parse the job handle
 			@emit 'JOB_CREATED', job_handle
 			return
 		if packet.type is packet_types.ERROR
-			error = binary.parse(packet.inputData).
-			scan('code', nb).
-			scan('text').
-			vars
+			result = @_parsePacket packet.inputData, 'ss'
+			result = { code : result[0], text: result[1] }
 			@emit 'ERROR', error
 			return
 		if packet.type is packet_types.STATUS_RES
-			o = binary.parse(packet.inputData).
-			scan('handle', nb).
-			scan('known', nb).
-			scan('running', nb).
-			scan('percent_done_num', nb).
-			word8be('percent_done_den').
-			vars
-			o.handle = o.handle.toString()
+			result = @_parsePacket packet.inputData, 'ssss8'
+			result = { handle : result[0], known: result[1], running: result[2], percent_done_num: result[3], percent_done_den: result[4] }
 			@emit 'STATUS_RES', o
 			return
 		if packet.type is packet_types.WORK_COMPLETE
-			result = binary.parse(packet.inputData).
-			scan('handle', nb).
-			tap( (vars) -> size = packet.inputData.length - (vars.handle.length + 1) ).
-			buffer('payload', size).
-			vars
+			result = @_parsePacket packet.inputData, 'sb'
+			result = { handle : result[0], payload: result[1] }
 			@emit 'WORK_COMPLETE', result
 			return
 		if packet.type is packet_types.WORK_DATA
-			result = binary.parse(packet.inputData).
-			scan('handle', nb).
-			scan('payload').
-			vars
+			result = @_parsePacket packet.inputData, 'sb'
+			result = { handle : result[0], payload: result[1] }
 			@emit 'WORK_DATA', result
 			return
 		if packet.type is packet_types.WORK_EXCEPTION
-			result = binary.parse(packet.inputData).
-			scan('handle', nb).
-			scan('exception').
-			vars
+			result = @_parsePacket packet.inputData, 'ss'
+			result = { handle : result[0], exception: result[1] }
 			@emit 'WORK_EXCEPTION', result
 			return
 		if packet.type is packet_types.WORK_WARNING
-			result = binary.parse(packet.inputData).
-			scan('handle', nb).
-			scan('warning').
-			vars
+			result = @_parsePacket packet.inputData, 'ss'
+			result = { handle : result[0], warning: result[1] }
 			@emit 'WORK_WARNING', result
 			return
 		if packet.type is packet_types.WORK_STATUS
-			result = binary.parse(packet.inputData).
-			scan('handle', nb).
-			scan('percent_numerator', nb).
-			scan('percent_denominator').
-			vars
+			result = @_parsePacket packet.inputData, 'sss'
+			result = { handle : result[0], percent_numerator: result[1], percent_denominator: result[2] }
 			@emit 'WORK_STATUS', result
 			return
 		if packet.type is packet_types.WORK_FAIL
-			result = binary.parse(packet.inputData).
-			scan('handle').vars
+			result = @_parsePacket packet.inputData, 's'
+			result = { handle: result[0] }
 			@emit 'WORK_FAIL', result
 			return
 		if packet.type is packet_types.OPTION_RES
-			result = binary.parse(packet.inputData).
-			scan('option_name').vars
+			result = @_parsePacket packet.inputData, 's'
+			result = { option_name: result[0] }
 			@emit 'OPTION_RES', result
 			return
 
@@ -385,27 +369,49 @@ class Gearman
 			@emit 'NO_JOB'
 			return
 		if packet.type is packet_types.JOB_ASSIGN
-			result = binary.parse(packet.inputData).
-			scan('handle', nb).
-			scan('func_name', nb).
-			tap( (vars) -> size = packet.inputData.length - (vars.handle.length + vars.func_name.length + 2) ).
-			buffer('payload', size).
-			vars
-			result.func_name = result.func_name.toString 'utf-8'
+			result = @_parsePacket packet.inputData, 'ssB'
+			result = { handle : result[0], func_name: result[1], payload: result[2] }
 			@emit 'JOB_ASSIGN', result
 			return
 		if packet.type is packet_types.JOB_ASSIGN_UNIQ
-			result = binary.parse(packet.inputData).
-			scan('handle', nb).
-			scan('func_name', nb).
-			scan('unique_id', nb).
-			scan('payload').
-			vars
+			result = @_parsePacket packet.inputData, 'sssB'
+			result = { handle : result[0], func_name: result[1], unique_id: result[2], payload: result[3] }
 			@emit 'JOB_ASSIGN_UNIQ', result
 			return
 		# TODO: handle these packet types: NOOP, ECHO_RES
 		#console.log 'rcvd packet', data , data.inputData.toString('utf-8')
 		
+	# parse a buffer based on a format string
+	_parsePacket: (packet, format_string) ->
+		format_string = format_string.toUpperCase()
+		b = binary.parse packet
+		len = 0
+		i = 0
+		while i < (format_string.length-1)
+			key = '' + i
+			c = format_string.charAt(i)
+			if c is 'S'
+				b.scan key, nb
+				len += (b.vars[key].length + 1)
+				b.vars[key] = b.vars[key].toString()
+			if c is 'B'
+				b.scan key, nb
+				len += (b.vars[key].length + 1)
+			if c is '8'
+				b.word8be key
+				len++
+			i++
+		if format_string.length > 0
+			i = format_string.length - 1
+			c = format_string.charAt i
+			if c is '8'
+				b.word8be(''+ i)
+			else
+				b.buffer ''+ i, packet.length - len
+				if c is 'S'
+					b.vars[''+ i]= b.vars[''+ i].toString()
+		b.vars
+
 	# common socket I/O
 	_send: (data, encoding=null) ->
 		if !@_conn

@@ -290,58 +290,92 @@ Gearman = (function() {
   };
 
   Gearman.prototype._handlePacket = function(packet) {
-    var error, job_handle, o, result, size;
-    size = 0;
+    var job_handle, result;
     if (packet.type === packet_types.JOB_CREATED) {
       job_handle = packet.inputData.toString();
       this.emit('JOB_CREATED', job_handle);
       return;
     }
     if (packet.type === packet_types.ERROR) {
-      error = binary.parse(packet.inputData).scan('code', nb).scan('text').vars;
+      result = this._parsePacket(packet.inputData, 'ss');
+      result = {
+        code: result[0],
+        text: result[1]
+      };
       this.emit('ERROR', error);
       return;
     }
     if (packet.type === packet_types.STATUS_RES) {
-      o = binary.parse(packet.inputData).scan('handle', nb).scan('known', nb).scan('running', nb).scan('percent_done_num', nb).word8be('percent_done_den').vars;
-      o.handle = o.handle.toString();
+      result = this._parsePacket(packet.inputData, 'ssss8');
+      result = {
+        handle: result[0],
+        known: result[1],
+        running: result[2],
+        percent_done_num: result[3],
+        percent_done_den: result[4]
+      };
       this.emit('STATUS_RES', o);
       return;
     }
     if (packet.type === packet_types.WORK_COMPLETE) {
-      result = binary.parse(packet.inputData).scan('handle', nb).tap(function(vars) {
-        return size = packet.inputData.length - (vars.handle.length + 1);
-      }).buffer('payload', size).vars;
+      result = this._parsePacket(packet.inputData, 'sb');
+      result = {
+        handle: result[0],
+        payload: result[1]
+      };
       this.emit('WORK_COMPLETE', result);
       return;
     }
     if (packet.type === packet_types.WORK_DATA) {
-      result = binary.parse(packet.inputData).scan('handle', nb).scan('payload').vars;
+      result = this._parsePacket(packet.inputData, 'sb');
+      result = {
+        handle: result[0],
+        payload: result[1]
+      };
       this.emit('WORK_DATA', result);
       return;
     }
     if (packet.type === packet_types.WORK_EXCEPTION) {
-      result = binary.parse(packet.inputData).scan('handle', nb).scan('exception').vars;
+      result = this._parsePacket(packet.inputData, 'ss');
+      result = {
+        handle: result[0],
+        exception: result[1]
+      };
       this.emit('WORK_EXCEPTION', result);
       return;
     }
     if (packet.type === packet_types.WORK_WARNING) {
-      result = binary.parse(packet.inputData).scan('handle', nb).scan('warning').vars;
+      result = this._parsePacket(packet.inputData, 'ss');
+      result = {
+        handle: result[0],
+        warning: result[1]
+      };
       this.emit('WORK_WARNING', result);
       return;
     }
     if (packet.type === packet_types.WORK_STATUS) {
-      result = binary.parse(packet.inputData).scan('handle', nb).scan('percent_numerator', nb).scan('percent_denominator').vars;
+      result = this._parsePacket(packet.inputData, 'sss');
+      result = {
+        handle: result[0],
+        percent_numerator: result[1],
+        percent_denominator: result[2]
+      };
       this.emit('WORK_STATUS', result);
       return;
     }
     if (packet.type === packet_types.WORK_FAIL) {
-      result = binary.parse(packet.inputData).scan('handle').vars;
+      result = this._parsePacket(packet.inputData, 's');
+      result = {
+        handle: result[0]
+      };
       this.emit('WORK_FAIL', result);
       return;
     }
     if (packet.type === packet_types.OPTION_RES) {
-      result = binary.parse(packet.inputData).scan('option_name').vars;
+      result = this._parsePacket(packet.inputData, 's');
+      result = {
+        option_name: result[0]
+      };
       this.emit('OPTION_RES', result);
       return;
     }
@@ -350,17 +384,64 @@ Gearman = (function() {
       return;
     }
     if (packet.type === packet_types.JOB_ASSIGN) {
-      result = binary.parse(packet.inputData).scan('handle', nb).scan('func_name', nb).tap(function(vars) {
-        return size = packet.inputData.length - (vars.handle.length + vars.func_name.length + 2);
-      }).buffer('payload', size).vars;
-      result.func_name = result.func_name.toString('utf-8');
+      result = this._parsePacket(packet.inputData, 'ssB');
+      result = {
+        handle: result[0],
+        func_name: result[1],
+        payload: result[2]
+      };
       this.emit('JOB_ASSIGN', result);
       return;
     }
     if (packet.type === packet_types.JOB_ASSIGN_UNIQ) {
-      result = binary.parse(packet.inputData).scan('handle', nb).scan('func_name', nb).scan('unique_id', nb).scan('payload').vars;
+      result = this._parsePacket(packet.inputData, 'sssB');
+      result = {
+        handle: result[0],
+        func_name: result[1],
+        unique_id: result[2],
+        payload: result[3]
+      };
       this.emit('JOB_ASSIGN_UNIQ', result);
     }
+  };
+
+  Gearman.prototype._parsePacket = function(packet, format_string) {
+    var b, c, i, key, len;
+    format_string = format_string.toUpperCase();
+    b = binary.parse(packet);
+    len = 0;
+    i = 0;
+    while (i < (format_string.length - 1)) {
+      key = '' + i;
+      c = format_string.charAt(i);
+      if (c === 'S') {
+        b.scan(key, nb);
+        len += b.vars[key].length + 1;
+        b.vars[key] = b.vars[key].toString();
+      }
+      if (c === 'B') {
+        b.scan(key, nb);
+        len += b.vars[key].length + 1;
+      }
+      if (c === '8') {
+        b.word8be(key);
+        len++;
+      }
+      i++;
+    }
+    if (format_string.length > 0) {
+      i = format_string.length - 1;
+      c = format_string.charAt(i);
+      if (c === '8') {
+        b.word8be('' + i);
+      } else {
+        b.buffer('' + i, packet.length - len);
+        if (c === 'S') {
+          b.vars['' + i] = b.vars['' + i].toString();
+        }
+      }
+    }
+    return b.vars;
   };
 
   Gearman.prototype._send = function(data, encoding) {

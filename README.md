@@ -37,7 +37,7 @@ Cookbook
 ========
 
 Here are some usage patterns:
-Basic Client: create a job and determine if it's been completed
+Basic Client: create a job and handle it's completion
 --------
 ```coffeescript
 client = new Gearman()  # assumes localhost, port 4730
@@ -73,5 +73,8 @@ worker.on 'NO_JOB', ->
 
 # register the functions this worker is capable of
 worker.addFunction 'upper'
+
+# get a job to work on
+worker.grabJob()
 ```
 

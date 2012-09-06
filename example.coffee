@@ -10,7 +10,6 @@ Gearman = require('./Gearman').Gearman
 
 
 # basic client: create a job and determine if it's been completed
-
 client = new Gearman()  # assumes localhost, port 4730
 
 # handle finished jobs
