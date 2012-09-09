@@ -22,7 +22,9 @@ I evaluated several existing libraries on github, but they either lack features,
 
 ## Install
 ```
-npm install https://github.com/mreinstein/node-gearman.git
+git clone https://github.com/mreinstein/node-gearman.git
+npm install ./node-gearman
+rm -rf node-gearman
 ```
 
 ## Test

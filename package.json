@@ -20,6 +20,7 @@
         "nodeunit" : "0.7.x",
         "buffertools": "1.1.x"
     },
+    "main": "./gearman",
     "scripts": {
         "test": "nodeunit tests"
     },
