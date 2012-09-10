@@ -80,6 +80,7 @@ exports.testPacketLength = function(test){
     test.done();
 };
 
+
 exports.testCAN_DO = function(test){
 	var b = this.g._encodePacket(packet_types.CAN_DO, 'test function');
 	test.equal(b.length, 25, 'CAN_DO packet is wrong length');

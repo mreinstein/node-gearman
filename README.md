@@ -38,7 +38,7 @@ npm test
 ### create a client, create 1 job, and handle it's completion
 
 ```coffeescript
-Gearman = require('./Gearman').Gearman
+Gearman = require('gearman').Gearman
 
 # basic client: create a job and determine if it's been completed
 client = new Gearman() # assumes localhost, port 4730  
@@ -58,7 +58,7 @@ client.connect ->
 ### create a worker, register a function, and handle jobs
 
 ```coffeescript
-Gearman = require('./Gearman').Gearman
+Gearman = require('gearman').Gearman
 
 # handle jobs assigned by the server
 worker.on 'JOB_ASSIGN', (job) ->

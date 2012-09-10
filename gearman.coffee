@@ -59,7 +59,7 @@ packet_types =
 # TODO: consider using this dense format to specify packet formats. trades 
 # 		clarity for brevity 
 #packet_formats =
-#	CAN_DO 			   : [ 'a', ['buh'] ]
+#	CAN_DO 			   : [ 'S', ['func_name'] ]
 
 # common client and worker events emitted:
 #	ECHO_RES - sent in response to ECHO_REQ. mostly used for debug
@@ -447,7 +447,7 @@ class Gearman
 	# common send function. send a packet with 1 string followed by 1 Buffer
 	_sendPacketSB: (packet_type, str, buf) ->
 		if !Buffer.isBuffer(buf)
-			buf = new Buffer(buf)
+			buf = new Buffer(buf, 'utf8')
 		payload = put().
 			put(new Buffer(str, 'ascii')).
 			word8(0).
