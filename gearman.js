@@ -90,15 +90,16 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
     };
 
     GearmanPacketFactory.prototype._packetHunt = function() {
-      var new_buffer, new_packet, o;
+      var buffer_length, new_buffer, new_packet, o;
       new_packet = null;
-      if (this._buffer.buffer().length >= 12) {
+      buffer_length = this._buffer.buffer().length;
+      if (buffer_length >= 12) {
         o = binary.parse(this._buffer.buffer()).word32be('reqType').word32be('type').word32be('size').vars;
-        if (this._buffer.buffer().length >= (12 + o.size)) {
+        if (buffer_length >= (12 + o.size)) {
           new_packet = new Buffer(12 + o.size);
           this._buffer.buffer().copy(new_packet, 0, 0, new_packet.length);
-          new_buffer = new Buffer(this._buffer.buffer().length - new_packet.length);
-          this._buffer.buffer().copy(new_buffer, 0, new_packet.length);
+          new_buffer = new Buffer(buffer_length - new_packet.length);
+          this._buffer.buffer().copy(new_buffer, 0, new_packet.length, buffer_length);
           this._buffer = put().put(new_buffer);
         }
       }

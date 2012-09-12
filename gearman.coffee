@@ -86,6 +86,7 @@ class GearmanPacketFactory
 		if chunk.length is 0
 			return []
 
+		#console.log 'added chunkkkk', @_buffer.buffer(), chunk
 		# append the new data to the existing buffer
 		@_buffer.put chunk
 
@@ -101,19 +102,21 @@ class GearmanPacketFactory
 	# determine if the 
 	_packetHunt: ->
 		new_packet = null
+
+		buffer_length = @_buffer.buffer().length
 		# all packets are at least 12 bytes
-		if @_buffer.buffer().length >= 12
+		if buffer_length >= 12
 			# get the expected packet size
 			o = binary.parse(@_buffer.buffer()).word32be('reqType').word32be('type').word32be('size').vars
 
 			# determine if a full packet is in the buffer
-			if @_buffer.buffer().length >= (12 + o.size)
+			if buffer_length >= (12 + o.size)
 				# yes we have enough for a packet! shift bytes off the buffer
 				new_packet = new Buffer(12 + o.size)
 				@_buffer.buffer().copy new_packet, 0, 0, new_packet.length
 				# remove the bytes from the existing buffer
-				new_buffer = new Buffer(@_buffer.buffer().length - new_packet.length)
-				@_buffer.buffer().copy new_buffer, 0, new_packet.length
+				new_buffer = new Buffer(buffer_length - new_packet.length)
+				@_buffer.buffer().copy new_buffer, 0, new_packet.length, buffer_length
 				@_buffer = put().put(new_buffer)
 
 		new_packet
@@ -138,6 +141,7 @@ class Gearman
 
 			# factory produces fully formed Gearman packets
 			for packet in packets
+				#console.log 'decoding packet ', packet
 				# decode the data and execute the proper response handler
 				@_handlePacket @_decodePacket(packet)
 			
