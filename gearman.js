@@ -9,7 +9,7 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
 (function() {
   'use strict';
 
-  var EventEmitter, Gearman, binary, nb, net, packet_types, put, req, req_magic, res_magic, utillib;
+  var EventEmitter, Gearman, GearmanPacketFactory, binary, nb, net, packet_types, put, req, req_magic, res_magic, utillib;
 
   binary = require('binary');
 
@@ -66,6 +66,49 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
     SUBMIT_JOB_EPOCH: 36
   };
 
+  GearmanPacketFactory = (function() {
+
+    function GearmanPacketFactory() {
+      this._buffer = put();
+    }
+
+    GearmanPacketFactory.prototype.addBytes = function(chunk) {
+      var new_packet, packets;
+      if (chunk.length === 0) {
+        return [];
+      }
+      this._buffer.put(chunk);
+      packets = [];
+      new_packet = {};
+      while (new_packet) {
+        new_packet = this._packetHunt();
+        if (new_packet) {
+          packets.push(new_packet);
+        }
+      }
+      return packets;
+    };
+
+    GearmanPacketFactory.prototype._packetHunt = function() {
+      var new_buffer, new_packet, o;
+      new_packet = null;
+      if (this._buffer.buffer().length >= 12) {
+        o = binary.parse(this._buffer.buffer()).word32be('reqType').word32be('type').word32be('size').vars;
+        if (this._buffer.buffer().length >= (12 + o.size)) {
+          new_packet = new Buffer(12 + o.size);
+          this._buffer.buffer().copy(new_packet, 0, 0, new_packet.length);
+          new_buffer = new Buffer(this._buffer.buffer().length - new_packet.length);
+          this._buffer.buffer().copy(new_buffer, 0, new_packet.length);
+          this._buffer = put().put(new_buffer);
+        }
+      }
+      return new_packet;
+    };
+
+    return GearmanPacketFactory;
+
+  })();
+
   Gearman = (function() {
 
     function Gearman(host, port) {
@@ -75,8 +118,16 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
       this._worker_id = null;
       this._connected = false;
       this._conn = new net.Socket();
+      this._packetFactory = new GearmanPacketFactory();
       this._conn.on('data', function(chunk) {
-        return _this._handlePacket(_this._decodePacket(chunk));
+        var packet, packets, _i, _len, _results;
+        packets = _this._packetFactory.addBytes(chunk);
+        _results = [];
+        for (_i = 0, _len = packets.length; _i < _len; _i++) {
+          packet = packets[_i];
+          _results.push(_this._handlePacket(_this._decodePacket(packet)));
+        }
+        return _results;
       });
       this._conn.on('error', function(error) {
         return console.log('error', error);
@@ -256,13 +307,75 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
       return this._worker_id = id;
     };
 
+    Gearman.prototype.adminStatus = function(callback) {
+      var conn,
+        _this = this;
+      conn = new net.Socket();
+      conn.on('data', function(chunk) {
+        var i, line, lines, result;
+        result = {};
+        lines = chunk.toString('ascii').split('\n');
+        i = 0;
+        while (i < lines.length) {
+          if (lines[i].length > 1) {
+            line = lines[i].split('\t');
+            result[line[0]] = {
+              total: parseInt(line[1]),
+              running: parseInt(line[2]),
+              available_workers: parseInt(line[3])
+            };
+          }
+          i++;
+        }
+        conn.destroy();
+        return callback(result);
+      });
+      return conn.connect(this.port, this.host, function() {
+        var b;
+        b = new Buffer('status\n', 'ascii');
+        return conn.write(b, 'ascii');
+      });
+    };
+
+    Gearman.prototype.adminWorkers = function(callback) {
+      var conn,
+        _this = this;
+      conn = new net.Socket();
+      conn.on('data', function(chunk) {
+        var i, line, lines, o, result;
+        result = [];
+        lines = chunk.toString('ascii').split('\n');
+        i = 0;
+        while (i < lines.length) {
+          if (lines[i].length > 1) {
+            line = lines[i].split(' ');
+            o = {};
+            o.fd = parseInt(line.shift());
+            o.ip = line.shift();
+            o.id = line.shift();
+            line.shift();
+            o.functions = line;
+            result.push(o);
+          }
+          i++;
+        }
+        conn.destroy();
+        return callback(result);
+      });
+      return conn.connect(this.port, this.host, function() {
+        var b;
+        b = new Buffer('workers\n', 'ascii');
+        return conn.write(b, 'ascii');
+      });
+    };
+
     Gearman.prototype._decodePacket = function(buf) {
       var o, size;
       if (!Buffer.isBuffer(buf)) {
         throw new Error('argument must be a buffer');
       }
       size = 0;
-      o = binary.parse(buf).word32bu('reqType').word32bu('type').word32bu('size').tap(function(vars) {
+      o = binary.parse(buf).word32be('reqType').word32be('type').word32be('size').tap(function(vars) {
         return size = vars.size;
       }).buffer('inputData', size).vars;
       if ((o.reqType !== binary.parse(res_magic).word32bu('reqType').vars.reqType) && (o.reqType !== binary.parse(req_magic).word32bu('reqType').vars.reqType)) {
@@ -284,15 +397,15 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
         data = null;
       }
       if (encoding == null) {
-        encoding = null;
+        encoding = 'utf-8';
       }
       if (!(data != null)) {
         data = new Buffer(0);
       }
-      len = data.length;
       if (!Buffer.isBuffer(data)) {
         data = new Buffer(data, encoding);
       }
+      len = data.length;
       if (type < 1 || type > 36) {
         throw new Error('invalid packet type');
       }
@@ -473,7 +586,7 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
     Gearman.prototype._sendPacketSB = function(packet_type, str, buf) {
       var job, payload;
       if (!Buffer.isBuffer(buf)) {
-        buf = new Buffer(buf, 'utf8');
+        buf = new Buffer('' + buf, 'utf8');
       }
       payload = put().put(new Buffer(str, 'ascii')).word8(0).put(buf).buffer();
       job = this._encodePacket(packet_type, payload);
@@ -497,6 +610,8 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
   })();
 
   module.exports.Gearman = Gearman;
+
+  module.exports.GearmanPacketFactory = GearmanPacketFactory;
 
   module.exports.packet_types = packet_types;
 

@@ -76,6 +76,48 @@ packet_types =
 #	JOB_ASSIGN_UNIQ - same as JOB_ASSIGN_UNIQ
 #	NOOP - the server has available jobs
 
+# takes in a stream of bytes as raw material, and produces Gearman packets
+class GearmanPacketFactory
+	constructor: ->
+		@_buffer = put()
+
+	# add a series of bytes as a buffer. Returns all completed packets
+	addBytes: (chunk) ->
+		if chunk.length is 0
+			return []
+
+		# append the new data to the existing buffer
+		@_buffer.put chunk
+
+		# pull all finished packets out of the buffer
+		packets = []
+		new_packet = {}
+		while new_packet
+			new_packet = @_packetHunt()
+			if new_packet
+				packets.push new_packet
+		packets
+
+	# determine if the 
+	_packetHunt: ->
+		new_packet = null
+		# all packets are at least 12 bytes
+		if @_buffer.buffer().length >= 12
+			# get the expected packet size
+			o = binary.parse(@_buffer.buffer()).word32be('reqType').word32be('type').word32be('size').vars
+
+			# determine if a full packet is in the buffer
+			if @_buffer.buffer().length >= (12 + o.size)
+				# yes we have enough for a packet! shift bytes off the buffer
+				new_packet = new Buffer(12 + o.size)
+				@_buffer.buffer().copy new_packet, 0, 0, new_packet.length
+				# remove the bytes from the existing buffer
+				new_buffer = new Buffer(@_buffer.buffer().length - new_packet.length)
+				@_buffer.buffer().copy new_buffer, 0, new_packet.length
+				@_buffer = put().put(new_buffer)
+
+		new_packet
+
 
 class Gearman
 	constructor: (@host='127.0.0.1', @port=4730) ->
@@ -85,12 +127,19 @@ class Gearman
 
 		@_conn = new net.Socket()
 		
+		@_packetFactory = new GearmanPacketFactory()
+
 		@_conn.on 'data', (chunk) =>
 			#console.log 'got data packet', chunk
 			#console.log 'to string:', chunk.toString()
 
-			# decode the data and execute the proper response handler
-			@_handlePacket @_decodePacket(chunk)
+			# add the stream of incoming bytes to the packet factory
+			packets = @_packetFactory.addBytes chunk
+
+			# factory produces fully formed Gearman packets
+			for packet in packets
+				# decode the data and execute the proper response handler
+				@_handlePacket @_decodePacket(packet)
 			
 		@_conn.on 'error', (error) ->
 			console.log 'error', error
@@ -275,6 +324,56 @@ class Gearman
 		@_worker_id = id
 
 
+	# public methods for Administrative protocol
+	adminStatus: (callback) ->
+		conn = new net.Socket()
+	
+		conn.on 'data', (chunk) =>
+			# parse response as  FUNCTION\tTOTAL\tRUNNING\tAVAILABLE_WORKERS
+			result = {}
+			lines = chunk.toString('ascii').split '\n'
+			i = 0
+			while i < lines.length
+				if lines[i].length > 1
+					line = lines[i].split '\t'
+					result[line[0]] = { total: parseInt(line[1]), running: parseInt(line[2]), available_workers: parseInt(line[3]) }
+				i++
+			conn.destroy()
+			callback result
+		
+		conn.connect @port, @host, () =>
+			# connection established
+			b = new Buffer 'status\n', 'ascii'
+			conn.write b, 'ascii'
+
+
+	adminWorkers: (callback) ->
+		conn = new net.Socket()
+		conn.on 'data', (chunk) =>
+			# parse response as  FD IP-ADDRESS CLIENT-ID : FUNCTION ...
+			result = []
+			lines = chunk.toString('ascii').split '\n'
+			i = 0
+			while i < lines.length
+				if lines[i].length > 1
+					line = lines[i].split ' '
+					o = {}
+					o.fd = parseInt line.shift()
+					o.ip = line.shift()
+					o.id = line.shift()
+					line.shift() # skip the : character
+					o.functions = line
+					result.push o
+				i++
+			conn.destroy()
+			callback result
+		
+		conn.connect @port, @host, () =>
+			# connection established
+			b = new Buffer 'workers\n', 'ascii'
+			conn.write b, 'ascii'
+
+
 	# private methods
 
 	# decode and encode augmented from https://github.com/cramerdev/gearman-node/blob/master/lib/packet.js
@@ -283,16 +382,19 @@ class Gearman
 		if !Buffer.isBuffer buf
 			throw new Error 'argument must be a buffer'
 
+		#console.log 'buf', buf, 'len', buf.length
 		size = 0
 		o = binary.parse(buf).
-			word32bu('reqType').
-			word32bu('type').
-			word32bu('size').
+			word32be('reqType').
+			word32be('type').
+			word32be('size').
 			tap(
 				(vars) -> size = vars.size
 			).
 			buffer('inputData', size).
 			vars
+
+		#console.log 'reported size:', o.size
 
 		# verify magic code in header matches request or response expected value
 		if (o.reqType isnt binary.parse(res_magic).word32bu('reqType').vars.reqType) and 
@@ -309,14 +411,14 @@ class Gearman
 		o
 
 	# construct a gearman binary packet
-	_encodePacket: (type, data=null, encoding=null) ->
+	_encodePacket: (type, data=null, encoding='utf-8') ->
 		if !data?
 			data = new Buffer 0
 
-		len = data.length
 		if !Buffer.isBuffer data
 			data = new Buffer data, encoding
 		
+		len = data.length
 		# check type
 		if type < 1 or type > 36
 			throw new Error 'invalid packet type'
@@ -330,7 +432,7 @@ class Gearman
 		put(data).
 		buffer()
 
-	# handle all packets received over the socket
+	# handle a packet received over the socket
 	_handlePacket: (packet) ->
 		#console.log 'packet type:', packet.type
 		# client and worker packets
@@ -447,7 +549,7 @@ class Gearman
 	# common send function. send a packet with 1 string followed by 1 Buffer
 	_sendPacketSB: (packet_type, str, buf) ->
 		if !Buffer.isBuffer(buf)
-			buf = new Buffer(buf, 'utf8')
+			buf = new Buffer('' + buf, 'utf8')
 		payload = put().
 			put(new Buffer(str, 'ascii')).
 			word8(0).
@@ -463,4 +565,5 @@ class Gearman
 		id.substr 0, length
 
 module.exports.Gearman = Gearman
+module.exports.GearmanPacketFactory = GearmanPacketFactory
 module.exports.packet_types = packet_types
