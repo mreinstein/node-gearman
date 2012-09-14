@@ -74,16 +74,13 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
 
     GearmanPacketFactory.prototype.addBytes = function(chunk) {
       var new_packet, packets;
-      if (chunk.length === 0) {
-        return [];
-      }
-      this._buffer.put(chunk);
       packets = [];
-      new_packet = {};
-      while (new_packet) {
-        new_packet = this._packetHunt();
-        if (new_packet) {
-          packets.push(new_packet);
+      if (chunk.length > 0) {
+        this._buffer.put(chunk);
+        while ((new_packet = this._packetHunt())) {
+          if (new_packet) {
+            packets.push(new_packet);
+          }
         }
       }
       return packets;

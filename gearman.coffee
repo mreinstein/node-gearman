@@ -82,27 +82,23 @@ class GearmanPacketFactory
 		@_buffer = put()
 
 	# add a series of bytes as a buffer. Returns all completed packets
+	# @param chunk Buffer object containing raw bytes
 	addBytes: (chunk) ->
-		if chunk.length is 0
-			return []
-
-		#console.log 'added chunkkkk', @_buffer.buffer(), chunk
-		# append the new data to the existing buffer
-		@_buffer.put chunk
-
-		# pull all finished packets out of the buffer
 		packets = []
-		new_packet = {}
-		while new_packet
-			new_packet = @_packetHunt()
-			if new_packet
-				packets.push new_packet
+		if chunk.length > 0
+			# append the new data to the existing buffer
+			@_buffer.put chunk
+
+			# pull all finished packets out of the buffer
+			while (new_packet = @_packetHunt())
+				if new_packet
+					packets.push new_packet
 		packets
 
-	# determine if the 
+	# pull 1 complete packet out of the buffer
+	# @returns object containing packet on success, null if 0 complete packets
 	_packetHunt: ->
 		new_packet = null
-
 		buffer_length = @_buffer.buffer().length
 		# all packets are at least 12 bytes
 		if buffer_length >= 12
@@ -118,7 +114,6 @@ class GearmanPacketFactory
 				new_buffer = new Buffer(buffer_length - new_packet.length)
 				@_buffer.buffer().copy new_buffer, 0, new_packet.length, buffer_length
 				@_buffer = put().put(new_buffer)
-
 		new_packet
 
 

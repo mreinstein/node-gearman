@@ -40,7 +40,6 @@ npm test
 ```coffeescript
 Gearman = require('gearman').Gearman
 
-# basic client: create a job and determine if it's been completed
 client = new Gearman() # assumes localhost, port 4730  
 
 # handle finished jobs
@@ -59,6 +58,8 @@ client.connect ->
 
 ```coffeescript
 Gearman = require('gearman').Gearman
+
+worker = new Gearman('127.0.0.1', 4730) 
 
 # handle jobs assigned by the server
 worker.on 'JOB_ASSIGN', (job) ->
