@@ -16,7 +16,7 @@
         "put": "0.0.x"
     },
     "devDependencies": {
-        "nodeunit" : "0.7.x",
+        "nodeunit" : "0.8.x",
         "buffertools": "1.1.x"
     },
     "main": "./gearman",

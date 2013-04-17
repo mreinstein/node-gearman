@@ -1,7 +1,5 @@
 ###
-
 based on protocol doc: http://gearman.org/index.php?id=protocol
-
 ###
 
 'use strict'
@@ -15,43 +13,43 @@ utillib = require 'util'
 nb = new Buffer [0] # null buffer
 
 req = new Buffer 'REQ', 'ascii'
-req_magic = new Buffer [0x00, 0x52, 0x45, 0x51]  # \0REQ
-res_magic = new Buffer [0, 0x52, 0x45, 0x53]  # \0RES
+req_magic = new Buffer [0x00, 0x52, 0x45, 0x51] # \0REQ
+res_magic = new Buffer [0, 0x52, 0x45, 0x53]    # \0RES
 
 
 packet_types =
-	CAN_DO 			   : 1  # sent by worker
-	CANT_DO 		   : 2  # sent by worker
+	CAN_DO             : 1  # sent by worker
+	CANT_DO            : 2  # sent by worker
 	RESET_ABILITIES    : 3  # sent by worker
-	PRE_SLEEP 		   : 4  # sent by worker
-	#RESERVED 		   : 5  # unused
-	NOOP 			   : 6  # received by worker
-	SUBMIT_JOB 		   : 7  # sent by client
-	JOB_CREATED 	   : 8  # received by client
-	GRAB_JOB 		   : 9  # sent by worker
-	NO_JOB			   : 10 # received by worker
-	JOB_ASSIGN 		   : 11 # used by client/worker
-	WORK_STATUS 	   : 12 # sent by worker
-	WORK_COMPLETE 	   : 13 # sent by worker
-	WORK_FAIL	 	   : 14 # sent by worker
-	GET_STATUS 		   : 15 # sent by client
-	ECHO_REQ 		   : 16
-	ECHO_RES 		   : 17 # received by client/worker
+	PRE_SLEEP          : 4  # sent by worker
+	#RESERVED          : 5  # unused
+	NOOP               : 6  # received by worker
+	SUBMIT_JOB         : 7  # sent by client
+	JOB_CREATED        : 8  # received by client
+	GRAB_JOB           : 9  # sent by worker
+	NO_JOB             : 10 # received by worker
+	JOB_ASSIGN         : 11 # used by client/worker
+	WORK_STATUS        : 12 # sent by worker
+	WORK_COMPLETE      : 13 # sent by worker
+	WORK_FAIL          : 14 # sent by worker
+	GET_STATUS         : 15 # sent by client
+	ECHO_REQ           : 16
+	ECHO_RES           : 17 # received by client/worker
 	SUBMIT_JOB_BG      : 18 # sent by client
-	ERROR 	 		   : 19 # received by client/worker
-	STATUS_RES		   : 20 # received by client
+	ERROR              : 19 # received by client/worker
+	STATUS_RES         : 20 # received by client
 	SUBMIT_JOB_HIGH    : 21 # sent by client
-	SET_CLIENT_ID 	   : 22 # sent by worker
-	CAN_DO_TIMEOUT 	   : 23 # sent by worker
-	ALL_YOURS 		   : 24 # not yet implemented by server
-	WORK_EXCEPTION 	   : 25 # sent by worker
-	OPTION_REQ 		   : 26 # used by client/worker
-	OPTION_RES 		   : 27 # used by client/worker
-	WORK_DATA 		   : 28 # sent by worker
-	WORK_WARNING 	   : 29 # sent by worker
-	GRAB_JOB_UNIQ 	   : 30 # sent by worker
+	SET_CLIENT_ID      : 22 # sent by worker
+	CAN_DO_TIMEOUT     : 23 # sent by worker
+	ALL_YOURS          : 24 # not yet implemented by server
+	WORK_EXCEPTION     : 25 # sent by worker
+	OPTION_REQ         : 26 # used by client/worker
+	OPTION_RES         : 27 # used by client/worker
+	WORK_DATA          : 28 # sent by worker
+	WORK_WARNING       : 29 # sent by worker
+	GRAB_JOB_UNIQ      : 30 # sent by worker
 	SUBMIT_JOB_HIGH_BG : 32 # sent by client
-	SUBMIT_JOB_LOW 	   : 33 # sent by client
+	SUBMIT_JOB_LOW     : 33 # sent by client
 	SUBMIT_JOB_LOW_BG  : 34 # sent by client
 	SUBMIT_JOB_SCHED   : 35 # unused, may be removed in the future
 	SUBMIT_JOB_EPOCH   : 36 # unused, may be removed in the future
@@ -59,7 +57,7 @@ packet_types =
 # TODO: consider using this dense format to specify packet formats. trades 
 # 		clarity for brevity 
 #packet_formats =
-#	CAN_DO 			   : [ 'S', ['func_name'] ]
+#	CAN_DO             : [ 'S', ['func_name'] ]
 
 # common client and worker events emitted:
 #	ECHO_RES - sent in response to ECHO_REQ. mostly used for debug
@@ -193,12 +191,12 @@ class Gearman
 
 		#determine which packet type to build
 		lookup_table = 
-			'lowtrue' : packet_types.SUBMIT_JOB_LOW_BG
-			'lowfalse' : packet_types.SUBMIT_JOB_LOW
-			'normaltrue' : packet_types.SUBMIT_JOB_BG
-			'normalfalse' : packet_types.SUBMIT_JOB
-			'hightrue' : packet_types.SUBMIT_JOB_HIGH_BG
-			'highfalse' : packet_types.SUBMIT_JOB_HIGH
+			lowtrue     : packet_types.SUBMIT_JOB_LOW_BG
+			lowfalse    : packet_types.SUBMIT_JOB_LOW
+			normaltrue  : packet_types.SUBMIT_JOB_BG
+			normalfalse : packet_types.SUBMIT_JOB
+			hightrue    : packet_types.SUBMIT_JOB_HIGH_BG
+			highfalse   : packet_types.SUBMIT_JOB_HIGH
 
 		# gearmand maintains a jobs hash, with the key being unique_id. setting
 		# this allows clients to ensure that only 1 job is present for a given 
@@ -322,7 +320,6 @@ class Gearman
 		@_sendPacketS packet_types.SET_CLIENT_ID, id
 		@_worker_id = id
 
-
 	# public methods for Administrative protocol
 	adminStatus: (callback) ->
 		conn = new net.Socket()
@@ -380,8 +377,6 @@ class Gearman
 	_decodePacket: (buf) ->
 		if !Buffer.isBuffer buf
 			throw new Error 'argument must be a buffer'
-
-		#console.log 'buf', buf, 'len', buf.length
 		size = 0
 		o = binary.parse(buf).
 			word32be('reqType').
@@ -392,8 +387,6 @@ class Gearman
 			).
 			buffer('inputData', size).
 			vars
-
-		#console.log 'reported size:', o.size
 
 		# verify magic code in header matches request or response expected value
 		if (o.reqType isnt binary.parse(res_magic).word32bu('reqType').vars.reqType) and 
