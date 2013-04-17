@@ -1,4 +1,4 @@
-# Gearman Client for nodejs 
+# Gearman Client and Worker for nodejs 
 
 
 ##Why Another Nodejs Gearman Client?

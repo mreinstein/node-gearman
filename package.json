@@ -1,7 +1,7 @@
 {
     "name": "gearman",
     "preferGlobal": "false",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "Mike Reinstein",
     "description": "gearman client and worker library",
     "repository": {
