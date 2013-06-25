@@ -60,7 +60,9 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
     SUBMIT_JOB_LOW: 33,
     SUBMIT_JOB_LOW_BG: 34,
     SUBMIT_JOB_SCHED: 35,
-    SUBMIT_JOB_EPOCH: 36
+    SUBMIT_JOB_EPOCH: 36,
+    GET_STATUS_UNIQUE : 41 ,
+    STATUS_RES_UNIQUE : 42
   };
 
   GearmanPacketFactory = (function() {
@@ -163,6 +165,10 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
 
     Gearman.prototype.getJobStatus = function(handle) {
       return this._sendPacketS(packet_types.GET_STATUS, handle);
+    };
+
+    Gearman.prototype.getJobStatusUnique = function (uniqueId) {
+      return this._sendPacketS(packet_types.GET_STATUS_UNIQUE, uniqueId);
     };
 
     Gearman.prototype.setOption = function(optionName) {
@@ -394,7 +400,7 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
       if ((o.reqType !== binary.parse(res_magic).word32bu('reqType').vars.reqType) && (o.reqType !== binary.parse(req_magic).word32bu('reqType').vars.reqType)) {
         throw new Error('invalid request header');
       }
-      if (o.type < 1 || o.type > 36) {
+      if (o.type < 1 || o.type > 42) {
         throw new Error('invalid packet type');
       }
       if (o.size !== o.inputData.length) {
@@ -420,7 +426,7 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
         data = new Buffer(data, encoding);
       }
       len = data.length;
-      if (type < 1 || type > 36) {
+      if (type < 1 || type > 42) {
         throw new Error('invalid packet type');
       }
       return put().word8(0).put(req).word32be(type).word32be(len).put(data).buffer();
@@ -454,6 +460,18 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
           percent_done_den: result[4]
         };
         this.emit('STATUS_RES', result);
+        return;
+      }
+      if (packet.type === packet_types.STATUS_RES) {
+        result = this._parsePacket(packet.inputData, 'ssss8');
+        result = {
+          unique_id: result[0],
+          known: result[1],
+          running: result[2],
+          percent_done_num: result[3],
+          percent_done_den: result[4]
+        };
+        this.emit('STATUS_RES_UNIQUE', result);
         return;
       }
       if (packet.type === packet_types.WORK_COMPLETE) {
