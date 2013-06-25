@@ -56,6 +56,7 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
     WORK_DATA: 28,
     WORK_WARNING: 29,
     GRAB_JOB_UNIQ: 30,
+    JOB_ASSIGN_UNIQ: 31,
     SUBMIT_JOB_HIGH_BG: 32,
     SUBMIT_JOB_LOW: 33,
     SUBMIT_JOB_LOW_BG: 34,
@@ -276,7 +277,7 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
     Gearman.prototype.grabUniqueJob = function() {
       var job;
 
-      job = this._encodePacket(packet_types.GRAB_JOB_UNIQ, '', 'ascii');
+      job = this._encodePacket(packet_types.GRAB_JOB_UNIQ);
       return this._send(job, 'ascii');
     };
 
