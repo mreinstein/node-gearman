@@ -25,7 +25,16 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
   req_magic = new Buffer([0x00, 0x52, 0x45, 0x51]);
 
   res_magic = new Buffer([0, 0x52, 0x45, 0x53]);
-
+  var debug = function() {};
+  if(process.env.DEBUG) {
+      try {
+          debug = require('debug')('gearman');
+      }
+      catch (e) {
+          console.log("Notice: 'debug' module is not available. This should be installed with `npm install debug` to enable debug messages", e);
+          debug = function() {};
+      }
+  }
   packet_types = {
     CAN_DO: 1,
     CANT_DO: 2,
@@ -109,7 +118,7 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
   })();
 
   Gearman = (function() {
-    function Gearman(host, port) {
+    function Gearman(host, port,options) {
       var _this = this;
 
       this.host = host != null ? host : '127.0.0.1';
@@ -129,14 +138,26 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
         }
         return _results;
       });
+      if(options != null) {
+          if(options.timeout != null ){
+              this._conn.setTimeout(options.timeout);
+          }
+      }
       this._conn.on('error', function(error) {
-        return console.log('error', error);
+        debug('error', error);
+        _this.emit('error',error);
+        return;
       });
       this._conn.on('close', function(had_transmission_error) {
-        return console.log('socket closed');
+        debug('socket closed');
+        _this.emit('close',had_transmission_error);
+        return;
       });
       this._conn.on('timeout', function() {
-        return console.log('socket timed out');
+        console.log("timeout");
+        debug('socket timed out');
+        _this.emit('timeout');
+        return;
       });
     }
 
