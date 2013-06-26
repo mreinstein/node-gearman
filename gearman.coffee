@@ -16,43 +16,55 @@ req = new Buffer 'REQ', 'ascii'
 req_magic = new Buffer [0x00, 0x52, 0x45, 0x51] # \0REQ
 res_magic = new Buffer [0, 0x52, 0x45, 0x53]    # \0RES
 
+debug = ->
+
+if process.env.DEBUG
+  try
+    debug = require("debug")("gearman")
+  catch e
+    console.log "Notice: 'debug' module is not available. This should be installed with `npm install debug` to enable debug messages", e
+    debug = ->
+
 
 packet_types =
-	CAN_DO             : 1  # sent by worker
-	CANT_DO            : 2  # sent by worker
-	RESET_ABILITIES    : 3  # sent by worker
-	PRE_SLEEP          : 4  # sent by worker
-	#RESERVED          : 5  # unused
-	NOOP               : 6  # received by worker
-	SUBMIT_JOB         : 7  # sent by client
-	JOB_CREATED        : 8  # received by client
-	GRAB_JOB           : 9  # sent by worker
-	NO_JOB             : 10 # received by worker
-	JOB_ASSIGN         : 11 # used by client/worker
-	WORK_STATUS        : 12 # sent by worker
-	WORK_COMPLETE      : 13 # sent by worker
-	WORK_FAIL          : 14 # sent by worker
-	GET_STATUS         : 15 # sent by client
-	ECHO_REQ           : 16
-	ECHO_RES           : 17 # received by client/worker
-	SUBMIT_JOB_BG      : 18 # sent by client
-	ERROR              : 19 # received by client/worker
-	STATUS_RES         : 20 # received by client
-	SUBMIT_JOB_HIGH    : 21 # sent by client
-	SET_CLIENT_ID      : 22 # sent by worker
-	CAN_DO_TIMEOUT     : 23 # sent by worker
-	ALL_YOURS          : 24 # not yet implemented by server
-	WORK_EXCEPTION     : 25 # sent by worker
-	OPTION_REQ         : 26 # used by client/worker
-	OPTION_RES         : 27 # used by client/worker
-	WORK_DATA          : 28 # sent by worker
-	WORK_WARNING       : 29 # sent by worker
-	GRAB_JOB_UNIQ      : 30 # sent by worker
-	SUBMIT_JOB_HIGH_BG : 32 # sent by client
-	SUBMIT_JOB_LOW     : 33 # sent by client
-	SUBMIT_JOB_LOW_BG  : 34 # sent by client
-	SUBMIT_JOB_SCHED   : 35 # unused, may be removed in the future
-	SUBMIT_JOB_EPOCH   : 36 # unused, may be removed in the future
+	CAN_DO               : 1  # sent by worker
+	CANT_DO              : 2  # sent by worker
+	RESET_ABILITIES      : 3  # sent by worker
+	PRE_SLEEP            : 4  # sent by worker
+	#RESERVED            : 5  # unused
+	NOOP                 : 6  # received by worker
+	SUBMIT_JOB           : 7  # sent by client
+	JOB_CREATED          : 8  # received by client
+	GRAB_JOB             : 9  # sent by worker
+	NO_JOB               : 10 # received by worker
+	JOB_ASSIGN           : 11 # used by client/worker
+	WORK_STATUS          : 12 # sent by worker
+	WORK_COMPLETE        : 13 # sent by worker
+	WORK_FAIL            : 14 # sent by worker
+	GET_STATUS           : 15 # sent by client
+	ECHO_REQ             : 16
+	ECHO_RES             : 17 # received by client/worker
+	SUBMIT_JOB_BG        : 18 # sent by client
+	ERROR                : 19 # received by client/worker
+	STATUS_RES           : 20 # received by client
+	SUBMIT_JOB_HIGH      : 21 # sent by client
+	SET_CLIENT_ID        : 22 # sent by worker
+	CAN_DO_TIMEOUT       : 23 # sent by worker
+	ALL_YOURS            : 24 # not yet implemented by server
+	WORK_EXCEPTION       : 25 # sent by worker
+	OPTION_REQ           : 26 # used by client/worker
+	OPTION_RES           : 27 # used by client/worker
+	WORK_DATA            : 28 # sent by worker
+	WORK_WARNING         : 29 # sent by worker
+	GRAB_JOB_UNIQUE      : 30 # sent by worker
+	JOB_ASSIGN_UNIQUE    : 31 # received by worker
+	SUBMIT_JOB_HIGH_BG   : 32 # sent by client
+	SUBMIT_JOB_LOW       : 33 # sent by client
+	SUBMIT_JOB_LOW_BG    : 34 # sent by client
+	SUBMIT_JOB_SCHED     : 35 # unused, may be removed in the future
+	SUBMIT_JOB_EPOCH     : 36 # unused, may be removed in the future
+	GET_STATUS_UNIQUE    : 41 # sent by client
+	STATUS_RES_UNIQUE    : 42 # recived by client
 
 # TODO: consider using this dense format to specify packet formats. trades 
 # 		clarity for brevity 
@@ -116,15 +128,15 @@ class GearmanPacketFactory
 
 
 class Gearman
-	constructor: (@host='127.0.0.1', @port=4730) ->
+	constructor: (@host='127.0.0.1', @port=4730 , options) ->
 		@_worker_id = null
 
 		@_connected = false
 
 		@_conn = new net.Socket()
-		
-		@_packetFactory = new GearmanPacketFactory()
 
+		@_packetFactory = new GearmanPacketFactory()
+		@_conn.setTimeout options.timeout  if options.timeout?  if options?
 		@_conn.on 'data', (chunk) =>
 			#console.log 'got data packet', chunk
 			#console.log 'to string:', chunk.toString()
@@ -137,15 +149,21 @@ class Gearman
 				#console.log 'decoding packet ', packet
 				# decode the data and execute the proper response handler
 				@_handlePacket @_decodePacket(packet)
-			
+
 		@_conn.on 'error', (error) ->
-			console.log 'error', error
+      debug "error", error
+      _this.emit "error", error
+      return
 
 		@_conn.on 'close', (had_transmission_error) ->
-			console.log 'socket closed'
+      debug "close", had_transmission_error
+      _this.emit "close", had_transmission_error
+      return
 
 		@_conn.on 'timeout', () ->
-			console.log 'socket timed out'
+      debug "timeout"
+      _this.emit "timeout"
+      return
 
 
 	utillib.inherits @, EventEmitter
@@ -169,12 +187,17 @@ class Gearman
 		# let's try sending an ECHO packet
 		echo = @_encodePacket packet_types.ECHO_REQ, payload
 		@_send echo
-		
+
 
 	# public gearman client functions
 
 	getJobStatus: (handle) ->
 		@_sendPacketS packet_types.GET_STATUS, handle
+
+  # public gearman client functions
+
+	getJobStatusUnique: (uniqueId) ->
+		@_sendPacketS packet_types.GET_STATUS_UNIQUE, uniqueId
 
 	# set options on the job server. For now gearman only supports one option 'exceptions'
 	# setting this will forward WORK_EXCEPTION packets to the client
@@ -190,7 +213,7 @@ class Gearman
 			throw new Error 'function name must be a string'
 
 		#determine which packet type to build
-		lookup_table = 
+		lookup_table =
 			lowtrue     : packet_types.SUBMIT_JOB_LOW_BG
 			lowfalse    : packet_types.SUBMIT_JOB_LOW
 			normaltrue  : packet_types.SUBMIT_JOB_BG
@@ -199,10 +222,10 @@ class Gearman
 			highfalse   : packet_types.SUBMIT_JOB_HIGH
 
 		# gearmand maintains a jobs hash, with the key being unique_id. setting
-		# this allows clients to ensure that only 1 job is present for a given 
-		# id at any moment. This can be used to reduce the stampeding herd 
+		# this allows clients to ensure that only 1 job is present for a given
+		# id at any moment. This can be used to reduce the stampeding herd
 		# problem, where several clients would try to submit an identical job
-		# into gearman. By setting a unique id for the job, only 1 job instance 
+		# into gearman. By setting a unique id for the job, only 1 job instance
 		# will be present in gearmand at any time.
 		if !options.unique_id
 			# no unique_id is set, assume this job is unique and generate a key
@@ -240,7 +263,7 @@ class Gearman
 	# tell the server that this worker is capable of doing work
 	# @param string func_name name of the function that is supported
 	# @param int timeout (optional) specify a max time this function may run on
-	#		 a worker. if not done within timeout, server notifies client of 
+	#		 a worker. if not done within timeout, server notifies client of
 	#		 timeout 0 means no timeout
 	addFunction: (func_name, timeout=0) ->
 		if typeof(func_name) isnt 'string'
@@ -271,7 +294,7 @@ class Gearman
 		job = @_encodePacket packet_types.RESET_ABILITIES, '', 'ascii'
 		@_send job, 'ascii'
 
-	# notify the server that this worker is going to sleep. Server will send a  
+	# notify the server that this worker is going to sleep. Server will send a
 	# NOOP packet when new work is ready
 	preSleep: ->
 		job = @_encodePacket packet_types.PRE_SLEEP
@@ -284,7 +307,7 @@ class Gearman
 
 	# same as grabJob, but grabs jobs with unique ids assigned to them
 	grabUniqueJob: ->
-		job = @_encodePacket packet_types.GRAB_JOB_UNIQ, '', 'ascii'
+		job = @_encodePacket packet_types.GRAB_JOB_UNIQUE
 		@_send job, 'ascii'
 
 	sendWorkStatus: (job_handle, percent_numerator, percent_denominator) ->
@@ -313,8 +336,8 @@ class Gearman
 	sendWorkWarning: (job_handle, warning) ->
 		@_sendPacketSB packet_types.WORK_WARNING, job_handle, warning
 
-	# sets the worker ID in a job server so monitoring and reporting commands can 
-	# uniquely identify the various workers, and different connections to job 
+	# sets the worker ID in a job server so monitoring and reporting commands can
+	# uniquely identify the various workers, and different connections to job
 	# servers from the same worker.
 	setWorkerId: (id) ->
 		@_sendPacketS packet_types.SET_CLIENT_ID, id
@@ -323,7 +346,7 @@ class Gearman
 	# public methods for Administrative protocol
 	adminStatus: (callback) ->
 		conn = new net.Socket()
-	
+
 		conn.on 'data', (chunk) =>
 			# parse response as  FUNCTION\tTOTAL\tRUNNING\tAVAILABLE_WORKERS
 			result = {}
@@ -336,7 +359,7 @@ class Gearman
 				i++
 			conn.destroy()
 			callback result
-		
+
 		conn.connect @port, @host, () =>
 			# connection established
 			b = new Buffer 'status\n', 'ascii'
@@ -363,7 +386,7 @@ class Gearman
 				i++
 			conn.destroy()
 			callback result
-		
+
 		conn.connect @port, @host, () =>
 			# connection established
 			b = new Buffer 'workers\n', 'ascii'
@@ -389,11 +412,11 @@ class Gearman
 			vars
 
 		# verify magic code in header matches request or response expected value
-		if (o.reqType isnt binary.parse(res_magic).word32bu('reqType').vars.reqType) and 
+		if (o.reqType isnt binary.parse(res_magic).word32bu('reqType').vars.reqType) and
 		(o.reqType isnt binary.parse(req_magic).word32bu('reqType').vars.reqType)
 			throw new Error 'invalid request header'
 		# check type
-		if o.type < 1 or o.type > 36
+		if o.type < 1 or o.type > 42
 			throw new Error 'invalid packet type'
 		# check size
 		if o.size != o.inputData.length
@@ -409,10 +432,10 @@ class Gearman
 
 		if !Buffer.isBuffer data
 			data = new Buffer data, encoding
-		
+
 		len = data.length
 		# check type
-		if type < 1 or type > 36
+		if type < 1 or type > 42
 			throw new Error 'invalid packet type'
 
 		# encode the packet
@@ -446,6 +469,11 @@ class Gearman
 			result = @_parsePacket packet.inputData, 'ssss8'
 			result = { handle : result[0], known: result[1], running: result[2], percent_done_num: result[3], percent_done_den: result[4] }
 			@emit 'STATUS_RES', result
+			return
+		if packet.type is packet_types.STATUS_RES_UNIQUE
+			result = @_parsePacket packet.inputData, 'ssss8'
+			result = { unique_id : result[0], known: result[1], running: result[2], percent_done_num: result[3], percent_done_den: result[4] }
+			@emit 'STATUS_RES_UNIQUE', result
 			return
 		if packet.type is packet_types.WORK_COMPLETE
 			result = @_parsePacket packet.inputData, 'sb'
@@ -484,13 +512,13 @@ class Gearman
 			result = @_parsePacket packet.inputData, 'ssB'
 			@emit 'JOB_ASSIGN', { handle : result[0], func_name: result[1], payload: result[2] }
 			return
-		if packet.type is packet_types.JOB_ASSIGN_UNIQ
+		if packet.type is packet_types.JOB_ASSIGN_UNIQUE
 			p = @_parsePacket packet.inputData, 'sssB'
-			@emit 'JOB_ASSIGN_UNIQ', { handle : p[0], func_name: p[1], unique_id: p[2], payload: p[3] }
+			@emit 'JOB_ASSIGN_UNIQUE', { handle : p[0], func_name: p[1], unique_id: p[2], payload: p[3] }
 			return
 		if packet.type is packet_types.NOOP
 			@emit 'NOOP'
-		
+
 	# parse a buffer based on a format string
 	_parsePacket: (packet, format_string) ->
 		format_string = format_string.toUpperCase()
