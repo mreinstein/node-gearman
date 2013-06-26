@@ -40,7 +40,13 @@ npm test
 ```coffeescript
 Gearman = require('gearman').Gearman
 
-client = new Gearman() # assumes localhost, port 4730  
+client = new Gearman("localhost", 4730 , {timeout: 3000}) # timeout in milliseconds. 
+
+#handle timeout 
+client.on 'timeout', () ->
+	console.log 'Timeout occured'
+	client.close()
+
 
 # handle finished jobs
 client.on 'WORK_COMPLETE', (job) ->
