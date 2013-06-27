@@ -56,8 +56,8 @@ packet_types =
 	OPTION_RES           : 27 # used by client/worker
 	WORK_DATA            : 28 # sent by worker
 	WORK_WARNING         : 29 # sent by worker
-	GRAB_JOB_UNIQUE      : 30 # sent by worker
-	JOB_ASSIGN_UNIQUE    : 31 # received by worker
+	GRAB_JOB_UNIQ        : 30 # sent by worker
+	JOB_ASSIGN_UNIQ      : 31 # received by worker
 	SUBMIT_JOB_HIGH_BG   : 32 # sent by client
 	SUBMIT_JOB_LOW       : 33 # sent by client
 	SUBMIT_JOB_LOW_BG    : 34 # sent by client
@@ -307,7 +307,7 @@ class Gearman
 
 	# same as grabJob, but grabs jobs with unique ids assigned to them
 	grabUniqueJob: ->
-		job = @_encodePacket packet_types.GRAB_JOB_UNIQUE
+		job = @_encodePacket packet_types.GRAB_JOB_UNIQ
 		@_send job, 'ascii'
 
 	sendWorkStatus: (job_handle, percent_numerator, percent_denominator) ->
@@ -512,9 +512,9 @@ class Gearman
 			result = @_parsePacket packet.inputData, 'ssB'
 			@emit 'JOB_ASSIGN', { handle : result[0], func_name: result[1], payload: result[2] }
 			return
-		if packet.type is packet_types.JOB_ASSIGN_UNIQUE
+		if packet.type is packet_types.JOB_ASSIGN_UNIQ
 			p = @_parsePacket packet.inputData, 'sssB'
-			@emit 'JOB_ASSIGN_UNIQUE', { handle : p[0], func_name: p[1], unique_id: p[2], payload: p[3] }
+			@emit 'JOB_ASSIGN_UNIQ', { handle : p[0], func_name: p[1], unique_id: p[2], payload: p[3] }
 			return
 		if packet.type is packet_types.NOOP
 			@emit 'NOOP'

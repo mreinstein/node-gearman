@@ -67,8 +67,8 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
     OPTION_RES: 27,
     WORK_DATA: 28,
     WORK_WARNING: 29,
-    GRAB_JOB_UNIQUE: 30,
-    JOB_ASSIGN_UNIQUE: 31,
+    GRAB_JOB_UNIQ: 30,
+    JOB_ASSIGN_UNIQ: 31,
     SUBMIT_JOB_HIGH_BG: 32,
     SUBMIT_JOB_LOW: 33,
     SUBMIT_JOB_LOW_BG: 34,
@@ -289,7 +289,7 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
 
     Gearman.prototype.grabUniqueJob = function() {
       var job;
-      job = this._encodePacket(packet_types.GRAB_JOB_UNIQUE);
+      job = this._encodePacket(packet_types.GRAB_JOB_UNIQ);
       return this._send(job, 'ascii');
     };
 
@@ -539,9 +539,9 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
         });
         return;
       }
-      if (packet.type === packet_types.JOB_ASSIGN_UNIQUE) {
+      if (packet.type === packet_types.JOB_ASSIGN_UNIQ) {
         p = this._parsePacket(packet.inputData, 'sssB');
-        this.emit('JOB_ASSIGN_UNIQUE', {
+        this.emit('JOB_ASSIGN_UNIQ', {
           handle: p[0],
           func_name: p[1],
           unique_id: p[2],
