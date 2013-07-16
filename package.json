@@ -3,7 +3,7 @@
     "preferGlobal": "false",
     "version": "0.1.1",
     "author": "Mike Reinstein",
-    "contributors": [ "goelvivek" ]
+    "contributors": [ "goelvivek" ],
     "description": "gearman client and worker library",
     "repository": {
         "type": "git",
