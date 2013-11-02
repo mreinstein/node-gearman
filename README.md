@@ -22,9 +22,7 @@ I evaluated several existing libraries on github, but they either lack features,
 
 ## Install
 ```
-git clone https://github.com/mreinstein/node-gearman.git
-npm install ./node-gearman
-rm -rf node-gearman
+npm install gearman-js
 ```
 
 ## Test
@@ -38,7 +36,7 @@ npm test
 ### create a client, create 1 job, and handle it's completion
 
 ```coffeescript
-Gearman = require('gearman').Gearman
+Gearman = require('gearman-js').Gearman
 
 client = new Gearman("localhost", 4730 , {timeout: 3000}) # timeout in milliseconds. 
 
@@ -63,7 +61,7 @@ client.connect ->
 ### create a worker, register a function, and handle jobs
 
 ```coffeescript
-Gearman = require('gearman').Gearman
+Gearman = require('gearman-js').Gearman
 
 worker = new Gearman('127.0.0.1', 4730) 
 
