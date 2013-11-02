@@ -1,16 +1,16 @@
 {
-    "name": "gearman",
-    "preferGlobal": "false",
+    "name": "gearman-js",
+    "preferGlobal": false,
     "version": "0.1.1",
     "author": "Mike Reinstein",
     "contributors": [ "goelvivek" ],
     "description": "gearman client and worker library",
     "repository": {
         "type": "git",
-        "url": "https://github.com/mreinstein/node-gearman.git"
+        "url": "https://github.com/mreinstein/gearman-js.git"
     },
     "keywords": [
-        "gearman"
+        "gearman", "javascript"
     ],
     "dependencies": {
         "binary": "0.3.x",
