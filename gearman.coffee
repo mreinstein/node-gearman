@@ -22,7 +22,6 @@ if process.env.DEBUG
   try
     debug = require("debug")("gearman")
   catch e
-    console.log "Notice: 'debug' module is not available. This should be installed with `npm install debug` to enable debug messages", e
     debug = ->
 
 
@@ -138,9 +137,6 @@ class Gearman
 		@_packetFactory = new GearmanPacketFactory()
 		@_conn.setTimeout options.timeout  if options.timeout?  if options?
 		@_conn.on 'data', (chunk) =>
-			#console.log 'got data packet', chunk
-			#console.log 'to string:', chunk.toString()
-
 			# add the stream of incoming bytes to the packet factory
 			packets = @_packetFactory.addBytes chunk
 
