@@ -1,33 +1,38 @@
 {
-    "name": "gearman-js",
-    "preferGlobal": false,
-    "version": "0.1.2",
-    "author": "Mike Reinstein",
-    "contributors": [ "goelvivek" ],
-    "description": "gearman client and worker library",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/mreinstein/gearman-js.git"
-    },
-    "keywords": [
-        "gearman", "javascript"
-    ],
-    "dependencies": {
-        "binary": "0.3.x",
-        "put": "0.0.x"
-    },
-    "devDependencies": {
-        "nodeunit" : "0.8.x",
-        "buffertools": "1.1.x"
-    },
-    "main": "./gearman",
-    "scripts": {
-        "test": "nodeunit tests"
-    },
-    "noAnalyze": true,
-    "bundleDependencies": [],
-    "license": "MIT",
-    "engine": {
-        "node": ">=0.8"
-    }
+  "name": "gearman-js",
+  "preferGlobal": false,
+  "version": "0.1.2",
+  "author": "Mike Reinstein",
+  "contributors": [
+    "goelvivek"
+  ],
+  "description": "gearman client and worker library",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mreinstein/gearman-js.git"
+  },
+  "keywords": [
+    "gearman",
+    "javascript"
+  ],
+  "dependencies": {
+    "binary": "0.3.x",
+    "put": "0.0.x"
+  },
+  "devDependencies": {
+    "buffertools": "1.1.x",
+    "coffee-script": "^1.7.1",
+    "nodeunit": "0.8.x"
+  },
+  "main": "./gearman",
+  "scripts": {
+    "build":"coffee -c gearman.coffee",
+    "test": "nodeunit tests"
+  },
+  "noAnalyze": true,
+  "bundleDependencies": [],
+  "license": "MIT",
+  "engine": {
+    "node": ">=0.8"
+  }
 }

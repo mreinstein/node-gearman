@@ -25,6 +25,12 @@ I evaluated several existing libraries on github, but they either lack features,
 npm install gearman-js
 ```
 
+
+## Building
+```
+npm run build
+```
+
 ## Test
 ```
 npm test
