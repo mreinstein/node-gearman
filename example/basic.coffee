@@ -15,7 +15,11 @@ client = new Gearman() # assumes localhost, port 4730
 # handle finished jobs
 client.on 'WORK_COMPLETE', (job) ->
 	console.log 'job completed, result:', job.payload.toString()
-	#client.close()
+	client.close()
+
+client.on 'close', (had_transmission_error) =>
+	console.log 'client conn closed. had transmission error?', had_transmission_error
+	
 
 # connect to the gearman server
 client.connect ->

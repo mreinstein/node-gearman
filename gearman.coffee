@@ -8,7 +8,7 @@ binary = require 'binary'
 put = require 'put'
 net = require 'net'
 EventEmitter = require('events').EventEmitter
-utillib = require 'util'
+#utillib = require 'util'
 
 nb = new Buffer [0] # null buffer
 
@@ -126,7 +126,7 @@ class GearmanPacketFactory
     new_packet
 
 
-class Gearman
+class Gearman extends EventEmitter
   constructor: (@host='127.0.0.1', @port=4730 , options) ->
     @_worker_id = null
 
@@ -146,23 +146,20 @@ class Gearman
         # decode the data and execute the proper response handler
         @_handlePacket @_decodePacket(packet)
 
-    @_conn.on 'error', (error) ->
+    @_conn.on 'error', (error) =>
       debug "error", error
-      _this.emit "error", error
-      return
+      @emit "error", error
 
-    @_conn.on 'close', (had_transmission_error) ->
+    @_conn.on 'close', (had_transmission_error) =>
       debug "close", had_transmission_error
-      _this.emit "close", had_transmission_error
-      return
+      @emit "close", had_transmission_error
 
-    @_conn.on 'timeout', () ->
+    @_conn.on 'timeout', () =>
       debug "timeout"
-      _this.emit "timeout"
-      return
+      @emit "timeout"
 
 
-  utillib.inherits @, EventEmitter
+  #utillib.inherits @, EventEmitter
 
   # close the socket connection and cleanup
   close: ->

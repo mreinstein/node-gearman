@@ -6,7 +6,9 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
 
 (function() {
   'use strict';
-  var EventEmitter, Gearman, GearmanPacketFactory, binary, debug, e, nb, net, packet_types, put, req, req_magic, res_magic, utillib;
+  var EventEmitter, Gearman, GearmanPacketFactory, binary, debug, e, nb, net, packet_types, put, req, req_magic, res_magic,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   binary = require('binary');
 
@@ -15,8 +17,6 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
   net = require('net');
 
   EventEmitter = require('events').EventEmitter;
-
-  utillib = require('util');
 
   nb = new Buffer([0]);
 
@@ -117,7 +117,9 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
 
   })();
 
-  Gearman = (function() {
+  Gearman = (function(_super) {
+    __extends(Gearman, _super);
+
     function Gearman(host, port, options) {
       this.host = host != null ? host : '127.0.0.1';
       this.port = port != null ? port : 4730;
@@ -142,21 +144,25 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
           return _results;
         };
       })(this));
-      this._conn.on('error', function(error) {
-        debug("error", error);
-        _this.emit("error", error);
-      });
-      this._conn.on('close', function(had_transmission_error) {
-        debug("close", had_transmission_error);
-        _this.emit("close", had_transmission_error);
-      });
-      this._conn.on('timeout', function() {
-        debug("timeout");
-        _this.emit("timeout");
-      });
+      this._conn.on('error', (function(_this) {
+        return function(error) {
+          debug("error", error);
+          return _this.emit("error", error);
+        };
+      })(this));
+      this._conn.on('close', (function(_this) {
+        return function(had_transmission_error) {
+          debug("close", had_transmission_error);
+          return _this.emit("close", had_transmission_error);
+        };
+      })(this));
+      this._conn.on('timeout', (function(_this) {
+        return function() {
+          debug("timeout");
+          return _this.emit("timeout");
+        };
+      })(this));
     }
-
-    utillib.inherits(Gearman, EventEmitter);
 
     Gearman.prototype.close = function() {
       if (this._connected) {
@@ -646,7 +652,7 @@ based on protocol doc: http://gearman.org/index.php?id=protocol
 
     return Gearman;
 
-  })();
+  })(EventEmitter);
 
   module.exports.Gearman = Gearman;
 
