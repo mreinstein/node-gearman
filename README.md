@@ -1,4 +1,4 @@
-# Gearman Client and Worker for nodejs 
+# Gearman Client and Worker
 
 ### pros:
 
