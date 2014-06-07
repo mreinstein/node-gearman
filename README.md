@@ -17,7 +17,6 @@ I evaluated several existing libraries on github, but they either lack features,
 
 * lacks elegant high level abstractions for doing work. A bit more boilerplate to write
 * only supports 1 server connection per client/worker
-* documentation is lacking. This is a priority and it's being addressed
 
 
 ## Install
