@@ -41,7 +41,7 @@ npm test
 ### create a client, create 1 job, and handle it's completion
 
 ```coffeescript
-Gearman = require('gearman-js').Gearman
+Gearman = require('gearman').Gearman
 
 client = new Gearman("localhost", 4730 , {timeout: 3000}) # timeout in milliseconds. 
 
@@ -66,7 +66,7 @@ client.connect ->
 ### create a worker, register a function, and handle jobs
 
 ```coffeescript
-Gearman = require('gearman-js').Gearman
+Gearman = require('gearman').Gearman
 
 worker = new Gearman('127.0.0.1', 4730) 
 
