@@ -21,7 +21,7 @@ I evaluated several existing libraries on github, but they either lack features,
 
 ## Install
 ```
-npm install gearman-js
+npm install gearman
 ```
 
 
