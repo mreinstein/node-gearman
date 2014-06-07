@@ -1,10 +1,6 @@
 # Gearman Client and Worker for nodejs 
 
-
-##Why Another Nodejs Gearman Client?
-I evaluated several existing libraries on github, but they either lack features, or stability, or recent updates. 
-
-### PROS:
+### pros:
 
 * full implementation of worker and client
 * lean abstraction over raw gearman protocol
@@ -13,7 +9,7 @@ I evaluated several existing libraries on github, but they either lack features,
 * small
 * fully interoperable with gearman clients and workers written in other languages
 
-### CONS:
+### cons:
 
 * lacks elegant high level abstractions for doing work. A bit more boilerplate to write
 * only supports 1 server connection per client/worker
@@ -36,7 +32,7 @@ npm test
 ```
 
 
-## Cookbook
+## Examples
 
 ### create a client, create 1 job, and handle it's completion
 
