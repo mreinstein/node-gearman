@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "buffertools": "1.1.x",
-    "coffee-script": "^1.7.1",
+    "coffee-script": "^1.8.0",
     "nodeunit": "^0.9.0"
   },
   "main": "./gearman",
