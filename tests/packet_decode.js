@@ -1,7 +1,8 @@
-var Gearman = require('../gearman.js').Gearman;
-var packet_types = require('../gearman.js').packet_types;
-require('buffertools');
-var put = require('put');
+var Gearman      = require('../').Gearman;
+var packet_types = require('../').packet_types;
+var put          = require('put');
+require('buffertools').extend();
+
 
 exports.setUp = function (callback) {
         this.g = new Gearman();
@@ -12,7 +13,6 @@ exports.tearDown = function (callback) {
     // clean up
     this.g.close();
     this.g = null;
-  
     callback();
 };
 

@@ -1,8 +1,8 @@
-var GearmanPacketFactory = require('../gearman.js').GearmanPacketFactory;
-require('buffertools');
-var put = require('put');
-require('buffertools');
-var packet_types = require('../gearman.js').packet_types;
+var GearmanPacketFactory = require('../').GearmanPacketFactory;
+var put                  = require('put');
+var packet_types         = require('../').packet_types;
+require('buffertools').extend();
+
 
 exports.setUp = function (callback) {
     this.g = new GearmanPacketFactory();

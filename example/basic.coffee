@@ -6,7 +6,7 @@ some basic usage example
 
 'use strict'
 
-Gearman = require('../Gearman').Gearman
+Gearman = require('../').Gearman
 
 
 # basic client: create a job and determine if it's been completed

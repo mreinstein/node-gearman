@@ -6,7 +6,7 @@ shows how to submit a background job and check it's status
 
 'use strict'
 
-Gearman = require('./Gearman').Gearman
+Gearman = require('./').Gearman
 
 # create a client
 client = new Gearman() # assumes localhost, port 4730  

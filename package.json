@@ -17,16 +17,18 @@
   ],
   "dependencies": {
     "binary": "0.3.x",
+    "buffertools": "^2.1.3",
     "put": "0.0.x"
   },
   "devDependencies": {
-    "buffertools": "1.1.x",
+    "buffertools": "^2.1.3",
     "coffee-script": "^1.8.0",
     "nodeunit": "^0.9.0"
   },
-  "main": "./gearman",
+  "main": "index.js",
   "scripts": {
-    "build":"coffee -c gearman.coffee",
+    "prepublish": "npm run build & npm test",
+    "build": "coffee -c index.coffee",
     "test": "nodeunit tests"
   },
   "noAnalyze": true,

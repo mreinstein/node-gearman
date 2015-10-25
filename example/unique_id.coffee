@@ -7,7 +7,7 @@ a time. This is useful in mitigating thundering herd problems
 
 'use strict'
 
-Gearman = require('./Gearman').Gearman
+Gearman = require('./').Gearman
 
 # create a client
 client = new Gearman() # assumes localhost, port 4730  
