@@ -1,7 +1,7 @@
 {
   "name": "gearman",
   "preferGlobal": false,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": "Mike Reinstein <reinstein.mike@gmail.com>",
   "contributors": [
     "goelvivek"
@@ -31,6 +31,6 @@
   "noAnalyze": true,
   "license": "MIT",
   "engine": {
-    "node": ">=4"
+    "node": ">=6"
   }
 }
