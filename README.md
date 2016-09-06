@@ -17,15 +17,9 @@
 * only supports 1 server connection per client/worker
 
 
-## installation
-```
-npm install gearman
-```
+## usage
+[![NPM](https://nodei.co/npm/gearman.png)](https://nodei.co/npm/gearman/)
 
-## testing
-```
-npm test
-```
 
 
 ## examples
