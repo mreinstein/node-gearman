@@ -3,7 +3,6 @@
 const gearman      = require('../');
 const packet_types = require('../lib/packet-types');
 const put          = require('put');
-require('buffertools').extend();
 
 
 exports.setUp = function (callback) {

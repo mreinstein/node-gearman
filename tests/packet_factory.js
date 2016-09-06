@@ -1,7 +1,6 @@
 'use strict';
 
 const packetFactory = require('../lib/packet-factory');
-require('buffertools').extend();
 
 
 exports.setUp = function (callback) {
