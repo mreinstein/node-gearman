@@ -1,3 +1,6 @@
+# 2.0.1
+* removed unused dependency
+
 # 2.0.0
 
 * **breaking change** gearman is now a factory function. The new way to 
