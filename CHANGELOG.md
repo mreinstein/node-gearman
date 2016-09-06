@@ -6,6 +6,7 @@ instantiate:
 const gearman = require('gearman')
 let client = gearman(...)
 ```
+* **breaking change** requires node v6+
 * ported from coffeescript to es6
 * switched to strict mode
 * added travis CI
