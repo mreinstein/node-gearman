@@ -1,5 +1,7 @@
 # Gearman Client and Worker
 
+[![Build Status](https://travis-ci.org/mreinstein/node-gearman.svg?branch=master)](https://travis-ci.org/mreinstein/node-gearman)
+
 ### pros:
 
 * full implementation of worker and client
@@ -15,77 +17,75 @@
 * only supports 1 server connection per client/worker
 
 
-## Install
+## installation
 ```
 npm install gearman
 ```
 
-
-## Building
-```
-npm run build
-```
-
-## Test
+## testing
 ```
 npm test
 ```
 
 
-## Examples
+## examples
 
 ### create a client, create 1 job, and handle it's completion
 
-```coffeescript
-Gearman = require('gearman').Gearman
+```javascript
+const gearman = require('gearman');
 
-client = new Gearman("localhost", 4730 , {timeout: 3000}) # timeout in milliseconds. 
+let client = gearman("localhost", 4730 , {timeout: 3000}); // timeout in milliseconds. 
 
-# handle timeout 
-client.on 'timeout', () ->
-	console.log 'Timeout occurred'
-	client.close()
+// handle timeout 
+client.on('timeout', function() {
+	console.log('Timeout occurred');
+	client.close();
+});
 
 
-# handle finished jobs
-client.on 'WORK_COMPLETE', (job) ->
-	console.log 'job completed, result:', job.payload.toString()
-	client.close()
+// handle finished jobs
+client.on('WORK_COMPLETE', function(job) {
+	console.log('job completed, result:', job.payload.toString());
+	client.close();
+})
 
-# connect to the gearman server
-client.connect ->
-	# submit a job to uppercase a string with normal priority in the foreground
-	client.submitJob 'upper', 'Hello, World!'
+// connect to the gearman server
+client.connect(function() {
+	// submit a job to uppercase a string with normal priority in the foreground
+	client.submitJob('upper', 'Hello, World!');
+});
+	
 ```
 
 
 ### create a worker, register a function, and handle jobs
 
-```coffeescript
-Gearman = require('gearman').Gearman
+```javascript
+const gearman = require('gearman');
 
-worker = new Gearman('127.0.0.1', 4730) 
+let worker = gearman('127.0.0.1', 4730);
 
-# handle jobs assigned by the server
-worker.on 'JOB_ASSIGN', (job) ->
-	console.log job.func_name + ' job assigned to this worker'
-	result = job.payload.toString().toUpperCase()
-	# notify the server the job is done
-	worker.sendWorkComplete job.handle, result
+// handle jobs assigned by the server
+worker.on('JOB_ASSIGN', function(job) {
+	console.log(job.func_name + ' job assigned to this worker');
+	let result = job.payload.toString().toUpperCase();
+	// notify the server the job is done
+	worker.sendWorkComplete(job.handle, result);
 
-	# go back to sleep, telling the server we're ready for more work
-	worker.preSleep()
+	// go back to sleep, telling the server we're ready for more work
+	worker.preSleep();
+});
 
-# grab a job when the server signals one is available
-worker.on 'NOOP', ->
-	worker.grabJob()
+// grab a job when the server signals one is available
+worker.on('NOOP', function() {  worker.grabJob(); });
 
-# connect to the gearman server	
-worker.connect ->
-	# register the functions this worker is capable of
-	worker.addFunction 'upper'
+// connect to the gearman server	
+worker.connect(function(){
+	// register the functions this worker is capable of
+	worker.addFunction('upper');
 
-	# tell the server the worker is going to sleep, waiting for work
-	worker.preSleep()
+	// tell the server the worker is going to sleep, waiting for work
+	worker.preSleep();
+});
 ```
-

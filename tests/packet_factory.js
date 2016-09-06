@@ -1,11 +1,11 @@
-var GearmanPacketFactory = require('../').GearmanPacketFactory;
-var put                  = require('put');
-var packet_types         = require('../').packet_types;
+'use strict';
+
+const packetFactory = require('../lib/packet-factory');
 require('buffertools').extend();
 
 
 exports.setUp = function (callback) {
-    this.g = new GearmanPacketFactory();
+    this.g = packetFactory();
     callback();
 };
 
@@ -17,22 +17,22 @@ exports.tearDown = function (callback) {
 
 
 exports.testMultipleAddBytesSize = function(test){
-	var good_buffer = new Buffer([ 0x00, 0x00, 0x00, 0x53 ]);
+	const good_buffer = new Buffer([ 0x00, 0x00, 0x00, 0x53 ]);
 	this.g.addBytes(good_buffer);
 	this.g.addBytes(good_buffer);
-	test.equal(8, this.g._buffer.buffer().length);
+	test.equal(8, this.g.getBuffer().length);
 	
 	test.done();
 };
 
 exports.testPacketAndPartial = function(test){
 	// this packet has a full packet and the start of another
-	var good_buffer = new Buffer([ 0x00, 0x52, 0x45, 0x53, 0, 0, 0, 8, 0x00, 
+	const good_buffer = new Buffer([ 0x00, 0x52, 0x45, 0x53, 0, 0, 0, 8, 0x00, 
 		0x00, 0x00, 0x1f, 0x48, 0x3a, 0x4d, 0x69, 0x6b, 0x65, 0x73, 0x2d, 0x4d,
 		0x61, 0x63, 0x42, 0x6f, 0x6f, 0x6b, 0x2d, 0x41, 0x69, 0x72, 0x2e, 0x6c, 
 		0x6f, 0x63, 0x61, 0x6c, 0x3a, 0x32, 0x37, 0x38, 0x31, 0x36, 0x00, 0x52, 
 		0x45, 0x53, 0x00, 0x00, 0x00, 0x08]);
-	result = this.g.addBytes(good_buffer);
+	let result = this.g.addBytes(good_buffer);
 	test.equal(1, result.length);
 
 	// verify the first packet is the result
@@ -42,7 +42,7 @@ exports.testPacketAndPartial = function(test){
 		0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x3a, 0x32, 0x37, 0x38, 0x31, 0x36]) ) );
 
 	// verify the beginning of the next packet is the contents of the buffer
-	test.ok(this.g._buffer.buffer().equals( new Buffer([0x00, 0x52, 0x45, 0x53, 
+	test.ok(this.g.getBuffer().equals( new Buffer([0x00, 0x52, 0x45, 0x53, 
 		0x00, 0x00, 0x00, 0x08]) ) );
 
 	test.done();
@@ -50,14 +50,13 @@ exports.testPacketAndPartial = function(test){
 
 exports.testEmptyPacket = function(test){
 	// an empty packet has only a 12 byte header
-	var good_buffer = new Buffer([ 0x00, 0x52, 0x45, 0x53, 0, 0, 0, 8, 0x00, 
+	const good_buffer = new Buffer([ 0x00, 0x52, 0x45, 0x53, 0, 0, 0, 8, 0x00, 
 		0x00, 0x00, 0x00]);
-	result = this.g.addBytes(good_buffer);
+	let result = this.g.addBytes(good_buffer);
 	test.equal(1, result.length);
 	test.ok(result[0].equals( new Buffer([ 0x00, 0x52, 0x45, 0x53, 0, 0, 0, 8, 
 		0x00, 0x00, 0x00, 0x00]) ) );
 
-	test.ok(this.g._buffer.buffer().equals( new Buffer('') ) );
+	test.ok(this.g.getBuffer().equals( new Buffer('') ) );
 	test.done();
 };
-

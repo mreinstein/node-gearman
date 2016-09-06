@@ -1,19 +1,21 @@
-var Gearman      = require('../').Gearman;
-var packet_types = require('../').packet_types;
-var put          = require('put');
+'use strict';
+
+const gearman      = require('../');
+const packet_types = require('../lib/packet-types');
+const put          = require('put');
 require('buffertools').extend();
 
 
 exports.setUp = function (callback) {
-        this.g = new Gearman();
-        callback();
+  this.g = gearman('127.0.0.1', 4730, { exposeInternals: true });
+  callback();
 };
 
 exports.tearDown = function (callback) {
-    // clean up
-    this.g.close();
-    this.g = null;
-    callback();
+  // clean up
+  this.g.close();
+  this.g = null;
+  callback();
 };
 
 
@@ -39,7 +41,7 @@ exports.testInvalidInputBuffer = function(test){
 	});
 
 	test.throws(function(){
-		this.g._decodePacket(023);
+		this.g._decodePacket(0o023);
 	});
 	test.done();
 };
@@ -47,15 +49,15 @@ exports.testInvalidInputBuffer = function(test){
 exports.testMagicHeader = function(test){
 	// test a bad header
 	test.throws(function(){
-		var bad_buffer = new Buffer([0x00, 0x00, 0x45, 0x51, 0, 0, 0, 3, 0, 0, 0, 0]);
+		const bad_buffer = new Buffer([0x00, 0x00, 0x45, 0x51, 0, 0, 0, 3, 0, 0, 0, 0]);
 		this.g._decodePacket(bad_buffer);
 	});
 
 	// test 2 good headers (REQ and RES)
-	var good_buffer1 = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, packet_types.RESET_ABILITIES, 0, 0, 0, 0]);
-	var result = this.g._decodePacket(good_buffer1);
+	const good_buffer1 = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, packet_types.RESET_ABILITIES, 0, 0, 0, 0]);
+	let result = this.g._decodePacket(good_buffer1);
 	test.equal(result.type, packet_types.RESET_ABILITIES, 'REQ magic header fails');
-	var good_buffer2 = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, packet_types.RESET_ABILITIES, 0, 0, 0, 0]);
+	const good_buffer2 = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, packet_types.RESET_ABILITIES, 0, 0, 0, 0]);
 	result = this.g._decodePacket(good_buffer1);
 	test.equal(result.type, packet_types.RESET_ABILITIES, 'RES magic header fails');
 
@@ -65,7 +67,7 @@ exports.testMagicHeader = function(test){
 
 exports.testInvalidPacketType = function(test){
 	// passing an invalid packet type should throw an exception
-	var bad_buffer = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, 0, 0, 0, 0, 0 ]);
+	let bad_buffer = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, 0, 0, 0, 0, 0 ]);
 	test.throws(function(){
 		this.g._decodePacket(bad_buffer);
 	});
@@ -80,10 +82,10 @@ exports.testInvalidPacketType = function(test){
 };
 
 exports.testValidPacketType = function(test){
-	var good_buffer = null, result = null;
+	let good_buffer = null, result = null;
 
 	// validate all the valid packet types result in a buffer
-	for(var p_type=1; p_type< 37; p_type++)
+	for(let p_type=1; p_type< 37; p_type++)
 	{
 		good_buffer = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, p_type, 0, 0, 0, 0]);
 		result = this.g._decodePacket(good_buffer);
@@ -95,7 +97,7 @@ exports.testValidPacketType = function(test){
 
 exports.testInvalidPacketSize = function(test){
 	// passing an invalid packet size should throw an exception
-	var bad_buffer = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, 3, 0, 0, 0, 1 ]);
+	let bad_buffer = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, 3, 0, 0, 0, 1 ]);
 	test.throws(function(){
 		this.g._decodePacket(bad_buffer);
 	});
@@ -111,7 +113,7 @@ exports.testInvalidPacketSize = function(test){
 
 exports.testValidPacketSize = function(test){
 	// passing an invalid packet size should throw an exception
-	var bad_buffer = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, 3, 0, 0, 0, 1, 0x45 ]);
+	let bad_buffer = new Buffer([0x00, 0x52, 0x45, 0x51, 0, 0, 0, 3, 0, 0, 0, 1, 0x45 ]);
 	test.throws(function(){
 		this.g._decodePacket(bad_buffer);
 	});
@@ -126,11 +128,11 @@ exports.testValidPacketSize = function(test){
 };
 
 exports.testParsePacket = function(test){
-	var good_buffer = new Buffer([ 0x74, 0x65, 0x73, 0x74, 0x20, 0x66, 0x75, 
+	let good_buffer = new Buffer([ 0x74, 0x65, 0x73, 0x74, 0x20, 0x66, 0x75, 
 							   0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00, 0x00, 
 							   0x74, 0x65, 0x73, 0x74, 0x20, 0x70, 0x61, 0x79, 
 							   0x6c, 0x6f, 0x61, 0x64 ]);
-	result = this.g._parsePacket(good_buffer, 's8s');
+	let result = this.g._parsePacket(good_buffer, 's8s');
 	test.equal(result[0], 'test function');
 	test.equal(result[1], 0);
 	test.equal(result[2], 'test payload');
@@ -143,17 +145,17 @@ exports.testParsePacket = function(test){
 };
 
 exports.testNOOP = function(test){
-	var good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
+	const good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
 		packet_types.NOOP, 0, 0, 0, 0]);
 	this.g.on ('NOOP', function(){
 		test.done();
 	});
-	packet = this.g._decodePacket(good_buffer);
+	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
 };
 
 exports.testJOB_CREATED = function(test){
-	var good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
+	const good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
 		packet_types.JOB_CREATED, 0x00, 0x00, 0x00, 0x09, 0x48, 0x3a, 0x6d, 0x69, 
 		0x6b, 0x65, 0x3a, 0x37, 0x37]);
 
@@ -161,12 +163,12 @@ exports.testJOB_CREATED = function(test){
 		test.equal (job_handle, 'H:mike:77');
 		test.done();
 	});
-	packet = this.g._decodePacket(good_buffer);
+	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
 };
 
 exports.testJOB_ASSIGN = function(test){
-	var good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
+	const good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
 		packet_types.JOB_ASSIGN, 0x00, 0x00, 0x00, 0x1d, 0x48, 0x3a, 0x6d, 
 		0x69, 0x6b, 0x65, 0x3a, 0x37, 0x37, 0x00, 0x75, 0x70, 0x70, 0x65, 0x72, 
 		0x00, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57, 0x6f, 0x72, 0x6c, 
@@ -177,12 +179,12 @@ exports.testJOB_ASSIGN = function(test){
 		test.equal(job.payload, 'Hello, World!');
 		test.done();
 	});
-	packet = this.g._decodePacket(good_buffer);
+	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
 };
 
 exports.testWORK_COMPLETE = function(test){
-	var good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
+	const good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
 		packet_types.WORK_COMPLETE, 0x00, 0x00, 0x00, 0x17, 0x48, 0x3a, 0x6d, 
 		0x69, 0x6b, 0x65, 0x3a, 0x37, 0x37, 0x00, 0x48, 0x45, 0x4c, 0x4c, 0x4f, 
 		0x2c, 0x20, 0x57, 0x4f, 0x52, 0x4c, 0x44, 0x21]);
@@ -191,12 +193,12 @@ exports.testWORK_COMPLETE = function(test){
 		test.equal(job.payload, 'HELLO, WORLD!');
 		test.done();
 	});
-	packet = this.g._decodePacket(good_buffer);
+	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
 };
 
 exports.testECHO_RES = function(test){
-	var good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
+	const good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
 		packet_types.ECHO_RES, 0x00, 0x00, 0x00, 0x19, 0x64, 0x65, 0x61, 0x64,
 		0x6c, 0x69, 0x6e, 0x65, 0x73, 0x20, 0x61, 0x6e, 0x64, 0x20, 0x63, 0x6f,
 		0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x73]);
@@ -204,22 +206,22 @@ exports.testECHO_RES = function(test){
 		test.equal(payload, 'deadlines and commitments');
 		test.done();
 	});
-	packet = this.g._decodePacket(good_buffer);
+	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
 };
 
 exports.testNO_JOB = function(test){
-	var good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
+	const good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
 		packet_types.NO_JOB, 0, 0, 0, 0]);
 	this.g.on ('NO_JOB', function(){
 		test.done();
 	});
-	packet = this.g._decodePacket(good_buffer);
+	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
 };
 
 exports.testSTATUS_RES = function(test){
-	var good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
+	const good_buffer = new Buffer([0x00, 0x52, 0x45, 0x53, 0, 0, 0, 
 		packet_types.STATUS_RES, 0x00, 0x00, 0x00, 0x11, 0x48, 0x3a, 0x6d, 
 		0x69, 0x6b, 0x65, 0x3a, 0x39, 0x39, 0x00, 0x31, 0x00, 0x30, 0x00, 0x30,
 		0x00, 0x30]);
@@ -231,7 +233,7 @@ exports.testSTATUS_RES = function(test){
 		test.equal(job.percent_done_den, 48);
 		test.done();
 	});
-	packet = this.g._decodePacket(good_buffer);
+	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
 };
 
