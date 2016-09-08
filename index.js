@@ -394,12 +394,12 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
 
     if (packet.type === packetTypes.ERROR) {
       let result = _parsePacket(packet.inputData, 'ss');
-      this.emit('ERROR', result[0], result[1]);
+      _emitter.emit('ERROR', result[0], result[1]);
       return;
     }
 
     if (packet.type === packetTypes.STATUS_RES) {
-      let result = this._parsePacket(packet.inputData, 'ssss8');
+      let result = _parsePacket(packet.inputData, 'ssss8');
       result = {
         handle: result[0],
         known: result[1],
@@ -412,7 +412,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     }
 
     if (packet.type === packetTypes.STATUS_RES_UNIQUE) {
-      let result = this._parsePacket(packet.inputData, 'ssss8');
+      let result = _parsePacket(packet.inputData, 'ssss8');
       result = {
         unique_id: result[0],
         known: result[1],
@@ -425,7 +425,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     }
 
     if (packet.type === packetTypes.WORK_COMPLETE) {
-      let result = this._parsePacket(packet.inputData, 'sb');
+      let result = _parsePacket(packet.inputData, 'sb');
       _emitter.emit('WORK_COMPLETE', {
         handle: result[0],
         payload: result[1]
@@ -434,7 +434,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     }
 
     if (packet.type === packetTypes.WORK_DATA) {
-      let result = this._parsePacket(packet.inputData, 'sb');
+      let result = _parsePacket(packet.inputData, 'sb');
       _emitter.emit('WORK_DATA', {
         handle: result[0],
         payload: result[1]
@@ -443,7 +443,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     }
 
     if (packet.type === packetTypes.WORK_EXCEPTION) {
-      let result = this._parsePacket(packet.inputData, 'ss');
+      let result = _parsePacket(packet.inputData, 'ss');
       _emitter.emit('WORK_EXCEPTION', {
         handle: result[0],
         exception: result[1]
@@ -452,7 +452,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     }
 
     if (packet.type === packetTypes.WORK_WARNING) {
-      let result = this._parsePacket(packet.inputData, 'ss');
+      let result = _parsePacket(packet.inputData, 'ss');
       _emitter.emit('WORK_WARNING', {
         handle: result[0],
         warning: result[1]
@@ -461,7 +461,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     }
 
     if (packet.type === packetTypes.WORK_STATUS) {
-      let result = this._parsePacket(packet.inputData, 'sss');
+      let result = _parsePacket(packet.inputData, 'sss');
       _emitter.emit('WORK_STATUS', {
         handle: result[0],
         percent_num: result[1],
@@ -471,13 +471,13 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     }
 
     if (packet.type === packetTypes.WORK_FAIL) {
-      let result = this._parsePacket(packet.inputData, 's');
+      let result = _parsePacket(packet.inputData, 's');
       _emitter.emit('WORK_FAIL', { handle: result[0] });
       return;
     }
 
     if (packet.type === packetTypes.OPTION_RES) {
-      let result = this._parsePacket(packet.inputData, 's');
+      let result = _parsePacket(packet.inputData, 's');
       _emitter.emit('OPTION_RES', { option_name: result[0] });
       return;
     }
@@ -489,7 +489,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     }
 
     if (packet.type === packetTypes.JOB_ASSIGN) {
-      let result = this._parsePacket(packet.inputData, 'ssB');
+      let result = _parsePacket(packet.inputData, 'ssB');
       _emitter.emit('JOB_ASSIGN', {
         handle: result[0],
         func_name: result[1],
@@ -499,7 +499,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     }
 
     if (packet.type === packetTypes.JOB_ASSIGN_UNIQ) {
-      let p = this._parsePacket(packet.inputData, 'sssB');
+      let p = _parsePacket(packet.inputData, 'sssB');
       _emitter.emit('JOB_ASSIGN_UNIQ', {
         handle: p[0],
         func_name: p[1],
@@ -590,7 +590,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     return id.substr(0, length);
   };
 
-  let result = { close, echo, getJobStatus, getJobStatusUnique,
+  let result = { close, connect, echo, getJobStatus, getJobStatusUnique,
            setOption, submitJob, addFunction, preSleep, grabJob, grabUniqueJob,
            sendWorkStatus, sendWorkFail, sendWorkComplete, sendWorkData, on,
            sendWorkException, sendWorkWarning, setWorkerId, adminStatus,
