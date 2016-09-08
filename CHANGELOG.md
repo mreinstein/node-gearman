@@ -1,3 +1,7 @@
+# 2.0.2
+* expose `connect()`
+* remove all references to `this`
+
 # 2.0.1
 * removed unused dependency
 
