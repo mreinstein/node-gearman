@@ -563,7 +563,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   let _sendPacketS = function (packet_type, str) {
     if (typeof(str) !== 'string')
       throw new Error('parameter 1 must be a string');
-    payload = put().
+    let payload = put().
       put(new Buffer(str, 'ascii')).
       buffer();
     _send(_encodePacket(packet_type, payload));
@@ -573,7 +573,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   let _sendPacketSB = function (packet_type, str, buf) {
     if (!Buffer.isBuffer(buf))
       buf = new Buffer('' + buf, 'utf8');
-    payload = put().
+    let payload = put().
       put(new Buffer(str, 'ascii')).
       word8(0).
       put(buf).
