@@ -1,3 +1,10 @@
+# 2.0.4
+* updated nodeunit dependency
+* updated package.json
+
+# 2.0.3
+* fixes https://github.com/mreinstein/node-gearman/issues/21
+
 # 2.0.2
 * expose `connect()`
 * remove all references to `this`
@@ -7,8 +14,8 @@
 
 # 2.0.0
 
-* **breaking change** gearman is now a factory function. The new way to 
-instantiate: 
+* **breaking change** gearman is now a factory function. The new way to
+instantiate:
 ```javascript
 const gearman = require('gearman')
 let client = gearman(...)
