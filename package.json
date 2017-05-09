@@ -9,7 +9,7 @@
   "description": "gearman client and worker library",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mreinstein/gearman-js.git"
+    "url": "https://github.com/mreinstein/node-gearman"
   },
   "keywords": [
     "gearman",
@@ -21,7 +21,7 @@
     "put": "0.0.x"
   },
   "devDependencies": {
-    "nodeunit": "^0.10.0"
+    "nodeunit": "^0.11.0"
   },
   "main": "index.js",
   "scripts": {
