@@ -9,3 +9,4 @@ npm-debug.log
 # ignore the node inclusion directory
 node_modules/
 
+package-lock.json
