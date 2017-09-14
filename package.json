@@ -17,7 +17,7 @@
   ],
   "dependencies": {
     "binary": "0.3.x",
-    "debug": "^2.2.0",
+    "debug": "^3.0.1",
     "put": "0.0.x"
   },
   "devDependencies": {
