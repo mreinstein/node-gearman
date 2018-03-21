@@ -10,22 +10,22 @@ const put           = require('put');
 const net           = require('net');
 
 
-let nb = new Buffer([0]); // null buffer
-let req = new Buffer('REQ', 'ascii');
-const req_magic = new Buffer([0x00, 0x52, 0x45, 0x51]); // \0REQ
-const res_magic = new Buffer([0, 0x52, 0x45, 0x53]);    // \0RES
+let nb = Buffer.from([0]); // null buffer
+let req = Buffer.from('REQ', 'ascii');
+const req_magic = Buffer.from([0x00, 0x52, 0x45, 0x51]); // \0REQ
+const res_magic = Buffer.from([0, 0x52, 0x45, 0x53]);    // \0RES
 
 // common client and worker events emitted:
 // ECHO_RES - sent in response to ECHO_REQ. mostly used for debug
 
 // client events emitted:
 //  JOB_CREATED - server rcv'd the job and queued it to be run by a worker
-//  STATUS_RES - sent in response to a getJobStatus to determine status of background jobs 
+//  STATUS_RES - sent in response to a getJobStatus to determine status of background jobs
 //  WORK_STATUS, WORK_COMPLETE, WORK_FAIL, WORK_EXCEPTION, WORK_DATA, WORK_WARNING
 //  OPTION_RES
 
 // worker events emitted:
-//  NO_JOB - server has no available jobs 
+//  NO_JOB - server has no available jobs
 //  JOB_ASSIGN - server assigned a job to the worker
 //  JOB_ASSIGN_UNIQ - same as JOB_ASSIGN_UNIQ
 //  NOOP - the server has available jobs
@@ -150,9 +150,9 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     if (!options.encoding)
       options.encoding = null;
     if (!data)
-      data = new Buffer();
+      data = Buffer.from([]);
     if (!Buffer.isBuffer(data))
-      data = new Buffer(data, options.encoding);
+      data = Buffer.from(data, options.encoding);
 
     options.background += ''; // convert boolean to string
     let sig = options.priority.trim().toLowerCase() + options.background.trim().toLowerCase();
@@ -161,9 +161,9 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
       throw new Error('invalid background or priority setting');
 
     let payload = put().
-      put(new Buffer(func_name, 'ascii')).
+      put(Buffer.from(func_name, 'ascii')).
       word8(0).
-      put(new Buffer(options.unique_id, 'ascii')).
+      put(Buffer.from(options.unique_id, 'ascii')).
       word8(0).
       put(data).
       buffer();
@@ -191,7 +191,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     if (timeout === 0) {
       _send(_encodePacket(packetTypes.CAN_DO, func_name));
     } else {
-      let payload = put().put(new Buffer(func_name, 'utf-8')).word8(0).word32be(timeout).buffer();
+      let payload = put().put(Buffer.from(func_name, 'utf-8')).word8(0).word32be(timeout).buffer();
       _send(_encodePacket(packetTypes.CAN_DO_TIMEOUT, payload));
     }
   };
@@ -225,11 +225,11 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
 
   let sendWorkStatus = function (job_handle, percent_numerator, percent_denominator) {
     let payload = put().
-      put(new Buffer(job_handle, 'ascii')).
+      put(Buffer.from(job_handle, 'ascii')).
       word8(0).
-      put(new Buffer(percent_numerator, 'ascii')).
+      put(Buffer.from(percent_numerator, 'ascii')).
       word8(0).
-      put(new Buffer(percent_denominator, 'ascii')).
+      put(Buffer.from(percent_denominator, 'ascii')).
       buffer();
     _send(_encodePacket(packetTypes.WORK_STATUS, payload));
   };
@@ -282,7 +282,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
 
     conn.connect(port, host, function() {
       // connection established
-      let b = new Buffer('status\n', 'ascii');
+      let b = Buffer.from('status\n', 'ascii');
       conn.write(b, 'ascii');
     });
   };
@@ -314,7 +314,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
 
     conn.connect(port, host, function() {
       // connection established
-      let b = new Buffer('workers\n', 'ascii');
+      let b = Buffer.from('workers\n', 'ascii');
       conn.write(b, 'ascii');
     });
   };
@@ -354,11 +354,11 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   // construct a gearman binary packet
   let _encodePacket = function(type, data=null, encoding='utf-8') {
     if (typeof data === "undefined" || data === null) {
-      data = new Buffer(0);
+      data = Buffer.alloc(0);
     }
 
     if (!Buffer.isBuffer(data)) {
-      data = new Buffer(data, encoding);
+      data = Buffer.from(data, encoding);
     }
 
     if (type < 1 || type > 42) {
@@ -564,7 +564,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     if (typeof(str) !== 'string')
       throw new Error('parameter 1 must be a string');
     let payload = put().
-      put(new Buffer(str, 'ascii')).
+      put(Buffer.from(str, 'ascii')).
       buffer();
     _send(_encodePacket(packet_type, payload));
   };
@@ -572,9 +572,9 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   // common send function. send a packet with 1 string followed by 1 Buffer
   let _sendPacketSB = function (packet_type, str, buf) {
     if (!Buffer.isBuffer(buf))
-      buf = new Buffer('' + buf, 'utf8');
+      buf = Buffer.from('' + buf, 'utf8');
     let payload = put().
-      put(new Buffer(str, 'ascii')).
+      put(Buffer.from(str, 'ascii')).
       word8(0).
       put(buf).
       buffer();
