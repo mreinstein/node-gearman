@@ -1,3 +1,7 @@
+# 2.0.5
+* move away from the deprecated Buffer constructor node API
+* update examples, removing leftover bits of coffeescript
+
 # 2.0.4
 * updated nodeunit dependency
 * updated package.json
