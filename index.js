@@ -324,18 +324,13 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     let conn = new net.Socket();
     conn.on('data', function(chunk) {
       let result = new Error('unknown');
-      let lines = chunk.toString('ascii').split('\n');
-      for (let line of lines) {
-        if (/^OK/.test(line)) {
-          result = null;
-          break;
-        } else if (/^ERR/.test(line)) {
-          result = new Error(line.substring(4));
-          break;
-        } else {
-          result = new Error(line);
-          break;
-        }
+      let line = chunk.toString('ascii').split('\n')[0];
+      if (/^OK/.test(line)) {
+        result = null;
+      } else if (/^ERR/.test(line)) {
+        result = new Error(line.substring(4));
+      } else {
+        result = new Error(line);
       }
 
       conn.destroy();
