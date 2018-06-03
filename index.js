@@ -326,10 +326,10 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
       let result = new Error('unknown');
       let lines = chunk.toString('ascii').split('\n');
       for (let line of lines) {
-        if (line === 'OK') {
+        if (/^OK/.test(line)) {
           result = null;
           break;
-        } elseif (/^ERR/.test(line)) {
+        } else if (/^ERR/.test(line)) {
           result = new Error(line.substring(4));
           break;
         } else {
