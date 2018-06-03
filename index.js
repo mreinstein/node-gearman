@@ -624,7 +624,8 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
            setOption, submitJob, addFunction, preSleep, grabJob, grabUniqueJob,
            sendWorkStatus, sendWorkFail, sendWorkComplete, sendWorkData, on,
            sendWorkException, sendWorkWarning, setWorkerId, adminStatus,
-           adminWorkers, removeFunction, resetAbilities, removeEventListener };
+           adminWorkers, removeFunction, resetAbilities, removeEventListener,
+           adminDropFunction };
 
   // expose some internal functions (useful for debugging)
   if (options.exposeInternals) {
