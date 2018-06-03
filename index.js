@@ -320,6 +320,36 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   };
 
 
+  let adminDropFunction = function (name, callback) {
+    let conn = new net.Socket();
+    conn.on('data', function(chunk) {
+      let result = new Error('unknown');
+      let lines = chunk.toString('ascii').split('\n');
+      for (let line of lines) {
+        if (line === 'OK') {
+          result = null;
+          break;
+        } elseif (/^ERR/.test(line)) {
+          result = new Error(line.substring(4));
+          break;
+        } else {
+          result = new Error(line);
+          break;
+        }
+      }
+
+      conn.destroy();
+      callback(result);
+    });
+
+    conn.connect(port, host, function() {
+      // connection established
+      let b = Buffer.from('drop function ' + name + '\n', 'ascii');
+      conn.write(b, 'ascii');
+    });
+  };
+
+
   // decode and encode augmented from https://github.com/cramerdev/gearman-node/blob/master/lib/packet.js
   // converts binary buffer packet to object
   let _decodePacket = function (buf) {
