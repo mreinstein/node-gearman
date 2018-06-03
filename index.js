@@ -320,6 +320,31 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   };
 
 
+  let adminDropFunction = function (name, callback) {
+    let conn = new net.Socket();
+    conn.on('data', function(chunk) {
+      let result = new Error('unknown');
+      let line = chunk.toString('ascii').split('\n')[0];
+      if (/^OK/.test(line)) {
+        result = null;
+      } else if (/^ERR/.test(line)) {
+        result = new Error(line.substring(4));
+      } else {
+        result = new Error(line);
+      }
+
+      conn.destroy();
+      callback(result);
+    });
+
+    conn.connect(port, host, function() {
+      // connection established
+      let b = Buffer.from('drop function ' + name + '\n', 'ascii');
+      conn.write(b, 'ascii');
+    });
+  };
+
+
   // decode and encode augmented from https://github.com/cramerdev/gearman-node/blob/master/lib/packet.js
   // converts binary buffer packet to object
   let _decodePacket = function (buf) {
@@ -594,7 +619,8 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
            setOption, submitJob, addFunction, preSleep, grabJob, grabUniqueJob,
            sendWorkStatus, sendWorkFail, sendWorkComplete, sendWorkData, on,
            sendWorkException, sendWorkWarning, setWorkerId, adminStatus,
-           adminWorkers, removeFunction, resetAbilities, removeEventListener };
+           adminWorkers, removeFunction, resetAbilities, removeEventListener,
+           adminDropFunction };
 
   // expose some internal functions (useful for debugging)
   if (options.exposeInternals) {
