@@ -68,11 +68,11 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   })
 
   // close the socket connection and cleanup
-  let close = function() {
+  const close = function() {
     if (_connected) _conn.end()
   }
 
-  let connect = function (callback) {
+  const connect = function (callback) {
     _connected = true
     // connect socket to server
     _conn.connect(port, host, function() {
@@ -82,37 +82,37 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     })
   }
 
-  let on = function(event, listener) {
+  const on = function(event, listener) {
     _emitter.on(event, listener)
   }
 
-  let removeEventListener = function(event, listener) {
+  const removeEventListener = function(event, listener) {
     _emitter.removeListener(event, listener)
   }
 
   // public gearman client/worker functions
 
   // send an echo packet. Server will respond with ECHO_RES packet. mostly debug
-  let echo = function (payload) {
+  const echo = function (payload) {
     _send(_encodePacket(packetTypes.ECHO_REQ, payload))
   }
 
 
   // public gearman client functions
 
-  let getJobStatus = function (handle) {
+  const getJobStatus = function (handle) {
     _sendPacketS(packetTypes.GET_STATUS, handle)
   }
 
   // public gearman client functions
 
-  let getJobStatusUnique = function (uniqueId) {
+  const getJobStatusUnique = function (uniqueId) {
     _sendPacketS(packetTypes.GET_STATUS_UNIQUE, uniqueId)
   }
 
   // set options on the job server. For now gearman only supports one option 'exceptions'
   // setting this will forward WORK_EXCEPTION packets to the client
-  let setOption = function (optionName='exceptions') {
+  const setOption = function (optionName='exceptions') {
     if (optionName !== 'exceptions')
       throw new Error('unsupported option')
     _sendPacketS(packetTypes.OPTION_REQ, optionName)
@@ -120,7 +120,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
 
   // submit a job to the gearman server
   // @param options supported options are: id, bg, payload
-  let submitJob = function(func_name, data=null, options={}) {
+  const submitJob = function(func_name, data=null, options={}) {
     if (typeof(func_name) !== 'string')
       throw new Error('function name must be a string')
 
@@ -179,7 +179,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   // @param int timeout (optional) specify a max time this function may run on
   //    a worker. if not done within timeout, server notifies client of
   //    timeout 0 means no timeout
-  let addFunction = function (func_name, timeout=0) {
+  const addFunction = function (func_name, timeout=0) {
     if (typeof(func_name) !== 'string')
       throw new Error('function name must be a string')
     if (typeof(timeout) !== 'number')
@@ -197,33 +197,33 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   }
 
   // tell a server that the worker is no longer capable of handling a function
-  let removeFunction = function (func_name) {
+  const removeFunction = function (func_name) {
     _sendPacketS(packetTypes.CANT_DO, func_name)
   }
 
   // notify the server it can't handle any of the functions previously declared
   // with addFunction
-  let resetAbilities = function() {
+  const resetAbilities = function() {
     _send(_encodePacket(packetTypes.RESET_ABILITIES, '', 'ascii'), 'ascii')
   }
 
   // notify the server that this worker is going to sleep. Server will send a
   // NOOP packet when new work is ready
-  let preSleep = function() {
+  const preSleep = function() {
     _send(_encodePacket(packetTypes.PRE_SLEEP), 'ascii')
   }
 
   // tell the server we want a new job
-  let grabJob = function() {
+  const grabJob = function() {
     _send(_encodePacket(packetTypes.GRAB_JOB), 'ascii')
   }
 
   // same as grabJob, but grabs jobs with unique ids assigned to them
-  let grabUniqueJob = function() {
+  const grabUniqueJob = function() {
     _send(_encodePacket(packetTypes.GRAB_JOB_UNIQ), 'ascii')
   }
 
-  let sendWorkStatus = function (job_handle, percent_numerator, percent_denominator) {
+  const sendWorkStatus = function (job_handle, percent_numerator, percent_denominator) {
     let payload = put().
       put(Buffer.from(job_handle, 'ascii')).
       word8(0).
@@ -234,36 +234,36 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     _send(_encodePacket(packetTypes.WORK_STATUS, payload))
   }
 
-  let sendWorkFail = function (job_handle) {
+  const sendWorkFail = function (job_handle) {
     _sendPacketS(packetTypes.WORK_FAIL, job_handle)
   }
 
-  let sendWorkComplete = function (job_handle, data) {
+  const sendWorkComplete = function (job_handle, data) {
     _sendPacketSB(packetTypes.WORK_COMPLETE, job_handle, data)
   }
 
-  let sendWorkData = function(job_handle, data) {
+  const sendWorkData = function(job_handle, data) {
     _sendPacketSB(packetTypes.WORK_DATA, job_handle, data)
   }
 
-  let sendWorkException = function(job_handle, exception) {
+  const sendWorkException = function(job_handle, exception) {
     _sendPacketSB(packetTypes.WORK_EXCEPTION, job_handle, exception)
   }
 
-  let sendWorkWarning = function (job_handle, warning) {
+  const sendWorkWarning = function (job_handle, warning) {
     _sendPacketSB(packetTypes.WORK_WARNING, job_handle, warning)
   }
 
   // sets the worker ID in a job server so monitoring and reporting commands can
   // uniquely identify the various workers, and different connections to job
   // servers from the same worker.
-  let setWorkerId = function (id) {
+  const setWorkerId = function (id) {
     _sendPacketS(packetTypes.SET_CLIENT_ID, id)
     _worker_id = id
   }
 
   // public methods for Administrative protocol
-  let adminStatus = function (callback) {
+  const adminStatus = function (callback) {
     let conn = new net.Socket()
 
     conn.on('data', function(chunk) {
@@ -288,7 +288,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   }
 
 
-  let adminWorkers = function (callback) {
+  const adminWorkers = function (callback) {
     let conn = new net.Socket()
     conn.on('data', function(chunk) {
       // parse response as  FD IP-ADDRESS CLIENT-ID : FUNCTION ...
@@ -320,7 +320,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   }
 
 
-  let adminDropFunction = function (name, callback) {
+  const adminDropFunction = function (name, callback) {
     let conn = new net.Socket()
     conn.on('data', function(chunk) {
       let result = new Error('unknown')
@@ -347,7 +347,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
 
   // decode and encode augmented from https://github.com/cramerdev/gearman-node/blob/master/lib/packet.js
   // converts binary buffer packet to object
-  let _decodePacket = function (buf) {
+  const _decodePacket = function (buf) {
     if (!Buffer.isBuffer(buf))
       throw new Error('argument must be a buffer')
     let size = 0
@@ -377,7 +377,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   }
 
   // construct a gearman binary packet
-  let _encodePacket = function(type, data=null, encoding='utf-8') {
+  const _encodePacket = function(type, data=null, encoding='utf-8') {
     if (typeof data === "undefined" || data === null) {
       data = Buffer.alloc(0)
     }
@@ -402,7 +402,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   // private methods
 
   // handle a packet received over the socket
-  let _handlePacket = function (packet) {
+  const _handlePacket = function (packet) {
     //console.log 'packet type:', packet.type
     // client and worker packets
     if (packet.type === packetTypes.ECHO_RES) {
@@ -540,7 +540,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   }
 
   // parse a buffer based on a format string
-  let _parsePacket = function (packet, format_string) {
+  const _parsePacket = function (packet, format_string) {
     format_string = format_string.toUpperCase()
     let b = binary.parse(packet)
     let len = 0
@@ -578,27 +578,27 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   }
 
   // common socket I/O
-  let _send = function (data, encoding=null) {
+  const _send = function (data, encoding=null) {
     if (!_connected)
       throw new Error('Cannot send packets before connecting. Please connect first.')
     _conn.write(data, encoding)
   }
 
   // common send function. send a packet with 1 string
-  let _sendPacketS = function (packet_type, str) {
+  const _sendPacketS = function (packet_type, str) {
     if (typeof(str) !== 'string')
       throw new Error('parameter 1 must be a string')
-    let payload = put().
+    const payload = put().
       put(Buffer.from(str, 'ascii')).
       buffer()
     _send(_encodePacket(packet_type, payload))
   }
 
   // common send function. send a packet with 1 string followed by 1 Buffer
-  let _sendPacketSB = function (packet_type, str, buf) {
+  const _sendPacketSB = function (packet_type, str, buf) {
     if (!Buffer.isBuffer(buf))
       buf = Buffer.from('' + buf, 'utf8')
-    let payload = put().
+    const payload = put().
       put(Buffer.from(str, 'ascii')).
       word8(0).
       put(buf).
@@ -608,14 +608,14 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   }
 
   // utility function to generate a random alphanumeric format_string
-  let _uniqueId = function (length = 12) {
+  const _uniqueId = function (length = 12) {
     let id = ''
     while (id.length < length)
       id += Math.random().toString(36).substr(2)
     return id.substr(0, length)
   }
 
-  let result = { close, connect, echo, getJobStatus, getJobStatusUnique,
+  const result = { close, connect, echo, getJobStatus, getJobStatusUnique,
            setOption, submitJob, addFunction, preSleep, grabJob, grabUniqueJob,
            sendWorkStatus, sendWorkFail, sendWorkComplete, sendWorkData, on,
            sendWorkException, sendWorkWarning, setWorkerId, adminStatus,
@@ -629,5 +629,6 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
     result._decodePacket = _decodePacket
     result._encodePacket = _encodePacket
   }
+
   return Object.freeze(result)
 }
