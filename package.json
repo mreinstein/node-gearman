@@ -21,12 +21,12 @@
     "put": "0.0.x"
   },
   "devDependencies": {
-    "nodeunit": "^0.11.0"
+    "tap": "^12.0.1"
   },
   "main": "index.js",
   "scripts": {
     "prepublish": "npm test",
-    "test": "nodeunit tests"
+    "test": "tap tests/"
   },
   "noAnalyze": true,
   "license": "MIT",

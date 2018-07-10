@@ -1,30 +1,31 @@
-'use strict';
+'use strict'
 
-const packetFactory = require('../lib/packet-factory');
-
-
-exports.setUp = function (callback) {
-    this.g = packetFactory();
-    callback();
-};
-
-exports.tearDown = function (callback) {
-    // clean up
-    this.g = null;
-    callback();
-};
+const packetFactory = require('../lib/packet-factory')
+const tap           = require('tap')
 
 
-exports.testMultipleAddBytesSize = function(test){
+tap.beforeEach(function(done) {
+	this.g = packetFactory()
+	done()
+})
+
+
+tap.afterEach(function(done) {
+	this.g = null
+	done()
+})
+
+
+tap.test(function testMultipleAddBytesSize (test) {
 	const good_buffer = Buffer.from([ 0x00, 0x00, 0x00, 0x53 ]);
 	this.g.addBytes(good_buffer);
 	this.g.addBytes(good_buffer);
 	test.equal(8, this.g.getBuffer().length);
-
 	test.done();
-};
+})
 
-exports.testPacketAndPartial = function(test){
+
+tap.test(function testPacketAndPartial (test) {
 	// this packet has a full packet and the start of another
 	const good_buffer = Buffer.from([ 0x00, 0x52, 0x45, 0x53, 0, 0, 0, 8, 0x00,
 		0x00, 0x00, 0x1f, 0x48, 0x3a, 0x4d, 0x69, 0x6b, 0x65, 0x73, 0x2d, 0x4d,
@@ -44,10 +45,11 @@ exports.testPacketAndPartial = function(test){
 	test.ok(this.g.getBuffer().equals( Buffer.from([0x00, 0x52, 0x45, 0x53,
 		0x00, 0x00, 0x00, 0x08]) ) );
 
-	test.done();
-};
+	test.done()
+})
 
-exports.testEmptyPacket = function(test){
+
+tap.test(function testEmptyPacket (test) {
 	// an empty packet has only a 12 byte header
 	const good_buffer = Buffer.from([ 0x00, 0x52, 0x45, 0x53, 0, 0, 0, 8, 0x00,
 		0x00, 0x00, 0x00]);
@@ -58,4 +60,4 @@ exports.testEmptyPacket = function(test){
 
 	test.ok(this.g.getBuffer().equals( Buffer.from('') ) );
 	test.done();
-};
+})

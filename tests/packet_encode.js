@@ -2,23 +2,24 @@
 
 const gearman      = require('../');
 const packet_types = require('../lib/packet-types');
-const put          = require('put');
+const put          = require('put')
+const tap          = require('tap')
 
 
-exports.setUp = function (callback) {
-  this.g = gearman('127.0.0.1', 4730, { exposeInternals: true });
-  callback();
-};
-
-exports.tearDown = function (callback) {
-  // clean up
-  this.g.close();
-  this.g = null;
-  callback();
-};
+tap.beforeEach(function(done) {
+  this.g = gearman('127.0.0.1', 4730, { exposeInternals: true })
+  done()
+})
 
 
-exports.testEncodeReturnsBuffer = function(test){
+tap.afterEach(function(done) {
+  this.g.close()
+  this.g = null
+  done()
+})
+
+
+tap.test(function testEncodeReturnsBuffer (test) {
 	const b = this.g._encodePacket(packet_types.CAN_DO, 'some data', 'ascii');
 	test.ok(Buffer.isBuffer(b), 'passing string payload fails');
 
@@ -35,10 +36,10 @@ exports.testEncodeReturnsBuffer = function(test){
 	test.ok(Buffer.isBuffer(f), 'passing null payload fails');
 
 	test.done();
-};
+})
 
 
-exports.testInvalidPacketType = function(test){
+tap.test(function testInvalidPacketType (test) {
 	// passing an invalid packet type should throw an exception
 	test.throws(function(){
 		this.g._encodePacket(0);
@@ -60,9 +61,10 @@ exports.testInvalidPacketType = function(test){
 	});
 
 	test.done();
-};
+})
 
-exports.testValidPacketType = function(test){
+
+tap.test(function testValidPacketType (test) {
 	// validate all the valid packet types result in a buffer
 	for(let p_type=1; p_type< 37; p_type++)
 	{
@@ -70,50 +72,55 @@ exports.testValidPacketType = function(test){
 		test.ok(Buffer.isBuffer(h), 'packet type '+ p_type +' fails');
 	}
     test.done();
-};
+})
 
-exports.testPacketLength = function(test) {
+
+tap.test(function testPacketLength (test) {
   const b = this.g._encodePacket(packet_types.CAN_DO, '');
   test.equal(b.length, 12, 'packet length is wrong for encoded CAN_DO packet');
   test.done();
-};
+})
 
 
-exports.testCAN_DO = function(test){
+tap.test(function testCAN_DO (test) {
 	const b = this.g._encodePacket(packet_types.CAN_DO, 'test function');
 	test.equal(b.length, 25, 'CAN_DO packet is wrong length');
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,1,0,0,0,13, 0x74, 0x65, 0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e]);
   test.ok( b.equals(data), 'encoded CAN_DO packet is malformed');
   test.done();
-};
+})
 
-exports.testCANT_DO = function(test){
+
+tap.test(function testCANT_DO (test) {
 	const b = this.g._encodePacket(packet_types.CANT_DO, 'test function');
 	test.ok((b.length == 25), 'CANT_DO packet is wrong length');
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,2,0,0,0,13, 0x74, 0x65, 0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e]);
   test.ok( b.equals(data), 'encoded CANT_DO packet is malformed');
   test.done();
-};
+})
 
-exports.testRESET_ABILITIES = function(test){
+
+tap.test(function testRESET_ABILITIES (test) {
 	const b = this.g._encodePacket(packet_types.RESET_ABILITIES);
 	test.equal(b.length, 12, 'RESET_PACKET packet is wrong length');
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,3,0,0,0,0]);
   test.ok( b.equals(data), 'encoded RESET_ABILITIES packet is malformed');
   test.done();
-};
+})
 
-exports.testPRE_SLEEP = function(test){
+
+tap.test(function testPRE_SLEEP (test){
 	const b = this.g._encodePacket(packet_types.PRE_SLEEP);
 	const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,4,0,0,0,0]);
   test.ok( b.equals(data), 'encoded PRE_SLEEP packet is malformed');
   test.done();
-};
+})
 
-exports.testSUBMIT_JOB = function(test){
+
+tap.test(function testSUBMIT_JOB (test) {
 	const func_name = 'test function';
 	let unique_id = '';
 	const payload = Buffer.from('test payload');
@@ -134,18 +141,20 @@ exports.testSUBMIT_JOB = function(test){
   	 0x61, 0x64]);
   test.ok( b.equals(data), 'encoded SUBMIT_JOB packet is malformed');
   test.done();
-};
+})
 
-exports.testGRAB_JOB = function(test){
+
+tap.test(function testGRAB_JOB (test) {
 	const b = this.g._encodePacket(packet_types.GRAB_JOB);
 	test.equal(b.length, 12, 'GRAB_JOB packet is wrong length');
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,9,0,0,0,0]);
   test.ok( b.equals(data), 'encoded GRAB_JOB packet is malformed');
   test.done();
-};
+})
 
-exports.testWORK_STATUS = function(test){
+
+tap.test(function testWORK_STATUS (test) {
   const job_handle = 'test job handle';
 	const percent_numerator = '2';
 	const percent_denominator = '100';
@@ -165,9 +174,10 @@ exports.testWORK_STATUS = function(test){
    0x65, 0x00, 0x32, 0x00, 0x31, 0x30, 0x30]);
   test.ok( b.equals(data), 'encoded WORK_STATUS packet is malformed');
   test.done();
-};
+})
 
-exports.testWORK_COMPLETE = function(test){
+
+tap.test(function testWORK_COMPLETE (test) {
 	const job_handle = Buffer.from('test job handle', 'ascii');
 	let payload = Buffer.from('test work result', 'ascii');
 	payload = put().
@@ -185,9 +195,10 @@ exports.testWORK_COMPLETE = function(test){
   0x72, 0x65, 0x73, 0x75, 0x6c, 0x74]);
   test.ok( b.equals(data), 'encoded WORK_COMPLETE packet is malformed');
   test.done();
-};
+})
 
-exports.testWORK_FAIL = function(test){
+
+tap.test(function testWORK_FAIL (test) {
 	const job_handle = Buffer.from('test job handle', 'ascii');
 	const payload = put().
 		put(job_handle).
@@ -199,10 +210,11 @@ exports.testWORK_FAIL = function(test){
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0, 14, 0, 0, 0, 15, 0x74, 0x65,
   0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c, 0x65 ]);
   test.ok( b.equals(data), 'encoded WORK_FAIL packet is malformed');
-  test.done();
-};
+  test.done()
+})
 
-exports.testGET_STATUS = function(test){
+
+tap.test(function testGET_STATUS (test) {
 	const payload = Buffer.from('test job handle', 'ascii');
 
 	const b = this.g._encodePacket(packet_types.GET_STATUS, payload);
@@ -212,9 +224,10 @@ exports.testGET_STATUS = function(test){
   0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c, 0x65 ]);
   test.ok( b.equals(data), 'encoded GET_STATUS packet is malformed');
   test.done();
-};
+})
 
-exports.testECHO_REQ = function(test){
+
+tap.test(function testECHO_REQ (test) {
 	const payload = Buffer.from('Hello World!', 'ascii');
 
 	const b = this.g._encodePacket(packet_types.ECHO_REQ, payload);
@@ -224,9 +237,10 @@ exports.testECHO_REQ = function(test){
   0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21 ]);
   test.ok( b.equals(data), 'encoded ECHO_REQ packet is malformed');
   test.done();
-};
+})
 
-exports.testSUBMIT_JOB_BG = function(test){
+
+tap.test(function testSUBMIT_JOB_BG (test) {
 	const func_name = 'test function';
 	let unique_id = '';
 	const payload = Buffer.from('test payload');
@@ -247,9 +261,10 @@ exports.testSUBMIT_JOB_BG = function(test){
   	 0x61, 0x64]);
   test.ok( b.equals(data), 'encoded SUBMIT_JOB_BG packet is malformed');
   test.done();
-};
+})
 
-exports.testSUBMIT_JOB_HIGH = function(test){
+
+tap.test(function testSUBMIT_JOB_HIGH (test) {
 	const func_name = 'test function';
 	const unique_id = '';
 	const payload = Buffer.from('test payload');
@@ -270,9 +285,10 @@ exports.testSUBMIT_JOB_HIGH = function(test){
   	 0x61, 0x64]);
   test.ok( b.equals(data), 'encoded SUBMIT_JOB_HIGH packet is malformed');
   test.done();
-};
+})
 
-exports.testSET_CLIENT_ID = function(test){
+
+tap.test(function testSET_CLIENT_ID (test) {
 	const payload = Buffer.from('test client id', 'ascii');
 
 	const b = this.g._encodePacket(packet_types.SET_CLIENT_ID, payload);
@@ -282,9 +298,10 @@ exports.testSET_CLIENT_ID = function(test){
   0x73, 0x74, 0x20, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x20, 0x69, 0x64 ]);
   test.ok( b.equals(data), 'encoded SET_CLIENT_ID packet is malformed');
   test.done();
-};
+})
 
-exports.testCAN_DO_TIMEOUT = function(test){
+
+tap.test(function testCAN_DO_TIMEOUT (test) {
 	const timeout = 2000;
 	const payload = put().
 		put(Buffer.from('test function', 'ascii')).
@@ -300,18 +317,20 @@ exports.testCAN_DO_TIMEOUT = function(test){
    0x00, 0x00, 0x07, 0xd0 ]);
   test.ok( b.equals(data), 'encoded CAN_DO_TIMEOUT packet is malformed');
   test.done();
-};
+})
 
-exports.testALL_YOURS = function(test){
+
+tap.test(function testALL_YOURS (test) {
 	const b = this.g._encodePacket(packet_types.ALL_YOURS);
 	test.equal(b.length, 12, 'ALL_YOURS packet is wrong length');
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,24,0,0,0,0]);
   test.ok( b.equals(data), 'encoded ALL_YOURS packet is malformed');
-  test.done();
-};
+  test.done()
+})
 
-exports.testWORK_EXCEPTION = function(test){
+
+tap.test(function testWORK_EXCEPTION (test) {
 	const job_handle = Buffer.from('test job handle', 'ascii');
 	const exception = Buffer.from('test job handle', 'ascii');
 	const payload = put().
@@ -329,9 +348,10 @@ exports.testWORK_EXCEPTION = function(test){
    0x61, 0x6e, 0x64, 0x6c, 0x65 ]);
   test.ok( b.equals(data), 'encoded WORK_EXCEPTION packet is malformed');
   test.done();
-};
+})
 
-exports.testOPTION_REQ = function(test){
+
+tap.test(function testOPTION_REQ (test) {
 	const payload = Buffer.from('exceptions');
 
 	const b = this.g._encodePacket(packet_types.OPTION_REQ, payload);
@@ -341,9 +361,10 @@ exports.testOPTION_REQ = function(test){
   	0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73 ]);
   test.ok( b.equals(data), 'encoded OPTION_REQ packet is malformed');
   test.done();
-};
+})
 
-exports.testWORK_DATA = function(test){
+
+tap.test(function testWORK_DATA (test) {
 	const job_handle = Buffer.from('test job handle', 'ascii');
 	let payload = Buffer.from('partial work', 'ascii');
 	payload = put().
@@ -361,9 +382,10 @@ exports.testWORK_DATA = function(test){
    0x72, 0x6b ]);
   test.ok( b.equals(data), 'encoded WORK_DATA packet is malformed');
   test.done();
-};
+})
 
-exports.testWORK_WARNING = function(test){
+
+tap.test(function testWORK_WARNING (test) {
 	const job_handle = Buffer.from('test job handle', 'ascii');
 	const warning = Buffer.from('test warning', 'ascii');
 	const payload = put().
@@ -380,18 +402,20 @@ exports.testWORK_WARNING = function(test){
    0x65, 0x00, 0x74, 0x65, 0x73, 0x74, 0x20, 0x77, 0x61, 0x72, 0x6e, 0x69, 0x6e, 0x67 ]);
   test.ok( b.equals(data), 'encoded WORK_WARNING packet is malformed');
   test.done();
-};
+})
 
-exports.testGRAB_JOB_UNIQ = function(test){
+
+tap.test(function testGRAB_JOB_UNIQ (test) {
 	const b = this.g._encodePacket(packet_types.GRAB_JOB_UNIQ);
 	test.equal(b.length, 12, 'GRAB_JOB_UNIQ packet is wrong length');
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0, 30, 0, 0, 0, 0 ]);
   test.ok( b.equals(data), 'encoded GRAB_JOB_UNIQ packet is malformed');
   test.done();
-};
+})
 
-exports.testSUBMIT_JOB_HIGH_BG = function(test){
+
+tap.test(function testSUBMIT_JOB_HIGH_BG (test) {
 	const func_name = 'test function';
 	const unique_id = '';
 	const payload = Buffer.from('test payload');
@@ -412,9 +436,10 @@ exports.testSUBMIT_JOB_HIGH_BG = function(test){
   	 0x61, 0x64]);
   test.ok( b.equals(data), 'encoded SUBMIT_JOB_HIGH_BG packet is malformed');
   test.done();
-};
+})
 
-exports.testSUBMIT_JOB_LOW = function(test){
+
+tap.test(function testSUBMIT_JOB_LOW (test) {
 	const func_name = 'test function';
 	const unique_id = '';
 	const payload = Buffer.from('test payload');
@@ -435,9 +460,10 @@ exports.testSUBMIT_JOB_LOW = function(test){
   	 0x61, 0x64]);
   test.ok( b.equals(data), 'encoded SUBMIT_JOB_LOW packet is malformed');
   test.done();
-};
+})
 
-exports.testSUBMIT_JOB_LOW_BG = function(test){
+
+tap.test(function testSUBMIT_JOB_LOW_BG (test) {
 	const func_name = 'test function';
 	const unique_id = '';
 	const payload = Buffer.from('test payload');
@@ -458,4 +484,4 @@ exports.testSUBMIT_JOB_LOW_BG = function(test){
   	 0x61, 0x64]);
   test.ok( b.equals(data), 'encoded SUBMIT_JOB_LOW_BG packet is malformed');
   test.done();
-};
+})

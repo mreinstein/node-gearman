@@ -3,23 +3,23 @@
 const gearman      = require('../');
 const packet_types = require('../lib/packet-types');
 const put          = require('put');
+const tap          = require('tap')
 
 
-exports.setUp = function (callback) {
-  this.g = gearman('127.0.0.1', 4730, { exposeInternals: true });
-  callback();
-};
+tap.beforeEach(function(done) {
+	this.g = gearman('127.0.0.1', 4730, { exposeInternals: true });
+	done()
+})
 
-exports.tearDown = function (callback) {
-  // clean up
-  this.g.close();
+tap.afterEach(function(done) {
+	this.g.close();
   this.g = null;
-  callback();
-};
+	done()
+})
 
 
 // passing something other than a buffer should throw an error
-exports.testInvalidInputBuffer = function(test){
+tap.test(function testInvalidInputBuffer (test) {
 	test.throws(function(){
 		this.g._decodePacket();
 	});
@@ -42,10 +42,12 @@ exports.testInvalidInputBuffer = function(test){
 	test.throws(function(){
 		this.g._decodePacket(0o023);
 	});
-	test.done();
-};
 
-exports.testMagicHeader = function(test){
+	test.done();
+})
+
+
+tap.test(function testMagicHeader (test) {
 	// test a bad header
 	test.throws(function(){
 		const bad_buffer = Buffer.from([0x00, 0x00, 0x45, 0x51, 0, 0, 0, 3, 0, 0, 0, 0]);
@@ -61,26 +63,27 @@ exports.testMagicHeader = function(test){
 	test.equal(result.type, packet_types.RESET_ABILITIES, 'RES magic header fails');
 
 	test.done();
-};
+})
 
 
-exports.testInvalidPacketType = function(test){
+tap.test(function testInvalidPacketType (test) {
 	// passing an invalid packet type should throw an exception
 	let bad_buffer = Buffer.from([0x00, 0x52, 0x45, 0x51, 0, 0, 0, 0, 0, 0, 0, 0 ]);
-	test.throws(function(){
+	test.throws(function() {
 		this.g._decodePacket(bad_buffer);
 	});
 
 	// passing an invalid packet type should throw an exception
 	bad_buffer = Buffer.from([0x00, 0x52, 0x45, 0x51, 0, 0, 0, 37, 0, 0, 0, 0 ]);
-	test.throws(function(){
+	test.throws(function() {
 		this.g._decodePacket(bad_buffer);
 	});
 
 	test.done();
-};
+})
 
-exports.testValidPacketType = function(test){
+
+tap.test(function testValidPacketType (test) {
 	let good_buffer = null, result = null;
 
 	// validate all the valid packet types result in a buffer
@@ -92,9 +95,10 @@ exports.testValidPacketType = function(test){
 	}
 
 	test.done();
-};
+})
 
-exports.testInvalidPacketSize = function(test){
+
+tap.test(function testInvalidPacketSize (test) {
 	// passing an invalid packet size should throw an exception
 	let bad_buffer = Buffer.from([0x00, 0x52, 0x45, 0x51, 0, 0, 0, 3, 0, 0, 0, 1 ]);
 	test.throws(function(){
@@ -108,9 +112,10 @@ exports.testInvalidPacketSize = function(test){
 	});
 
 	test.done();
-};
+})
 
-exports.testValidPacketSize = function(test){
+
+tap.test(function testValidPacketSize (test) {
 	// passing an invalid packet size should throw an exception
 	let bad_buffer = Buffer.from([0x00, 0x52, 0x45, 0x51, 0, 0, 0, 3, 0, 0, 0, 1, 0x45 ]);
 	test.throws(function(){
@@ -124,9 +129,10 @@ exports.testValidPacketSize = function(test){
 	});
 
 	test.done();
-};
+})
 
-exports.testParsePacket = function(test){
+
+tap.test(function testParsePacket (test) {
 	let good_buffer = Buffer.from([ 0x74, 0x65, 0x73, 0x74, 0x20, 0x66, 0x75,
 							   0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00, 0x00,
 							   0x74, 0x65, 0x73, 0x74, 0x20, 0x70, 0x61, 0x79,
@@ -141,9 +147,10 @@ exports.testParsePacket = function(test){
 	test.equal(result[0], 116);
 
 	test.done();
-};
+})
 
-exports.testNOOP = function(test){
+
+tap.test(function testNOOP (test) {
 	const good_buffer = Buffer.from([0x00, 0x52, 0x45, 0x53, 0, 0, 0,
 		packet_types.NOOP, 0, 0, 0, 0]);
 	this.g.on ('NOOP', function(){
@@ -151,9 +158,10 @@ exports.testNOOP = function(test){
 	});
 	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
-};
+})
 
-exports.testJOB_CREATED = function(test){
+
+tap.test(function testJOB_CREATED (test) {
 	const good_buffer = Buffer.from([0x00, 0x52, 0x45, 0x53, 0, 0, 0,
 		packet_types.JOB_CREATED, 0x00, 0x00, 0x00, 0x09, 0x48, 0x3a, 0x6d, 0x69,
 		0x6b, 0x65, 0x3a, 0x37, 0x37]);
@@ -164,52 +172,56 @@ exports.testJOB_CREATED = function(test){
 	});
 	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
-};
+})
 
-exports.testJOB_ASSIGN = function(test){
+
+tap.test(function testJOB_ASSIGN (test) {
 	const good_buffer = Buffer.from([0x00, 0x52, 0x45, 0x53, 0, 0, 0,
 		packet_types.JOB_ASSIGN, 0x00, 0x00, 0x00, 0x1d, 0x48, 0x3a, 0x6d,
 		0x69, 0x6b, 0x65, 0x3a, 0x37, 0x37, 0x00, 0x75, 0x70, 0x70, 0x65, 0x72,
 		0x00, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x57, 0x6f, 0x72, 0x6c,
 		0x64, 0x21]);
-	this.g.on ('JOB_ASSIGN', function(job){
+	this.g.on ('JOB_ASSIGN', function(job) {
 		test.equal(job.func_name, 'upper');
 		test.equal(job.handle, 'H:mike:77');
-		test.equal(job.payload, 'Hello, World!');
+		test.equal(job.payload.toString(), 'Hello, World!');
 		test.done();
 	});
 	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
-};
+})
 
-exports.testWORK_COMPLETE = function(test){
+
+tap.test(function testWORK_COMPLETE (test) {
 	const good_buffer = Buffer.from([0x00, 0x52, 0x45, 0x53, 0, 0, 0,
 		packet_types.WORK_COMPLETE, 0x00, 0x00, 0x00, 0x17, 0x48, 0x3a, 0x6d,
 		0x69, 0x6b, 0x65, 0x3a, 0x37, 0x37, 0x00, 0x48, 0x45, 0x4c, 0x4c, 0x4f,
 		0x2c, 0x20, 0x57, 0x4f, 0x52, 0x4c, 0x44, 0x21]);
 	this.g.on ('WORK_COMPLETE', function(job){
 		test.equal(job.handle, 'H:mike:77');
-		test.equal(job.payload, 'HELLO, WORLD!');
+		test.equal(job.payload.toString(), 'HELLO, WORLD!');
 		test.done();
 	});
 	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
-};
+})
 
-exports.testECHO_RES = function(test){
+
+tap.test(function testECHO_RES (test) {
 	const good_buffer = Buffer.from([0x00, 0x52, 0x45, 0x53, 0, 0, 0,
 		packet_types.ECHO_RES, 0x00, 0x00, 0x00, 0x19, 0x64, 0x65, 0x61, 0x64,
 		0x6c, 0x69, 0x6e, 0x65, 0x73, 0x20, 0x61, 0x6e, 0x64, 0x20, 0x63, 0x6f,
 		0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x73]);
 	this.g.on ('ECHO_RES', function(payload){
-		test.equal(payload, 'deadlines and commitments');
+		test.equal(payload.toString(), 'deadlines and commitments');
 		test.done();
 	});
 	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
-};
+})
 
-exports.testNO_JOB = function(test){
+
+tap.test(function testNO_JOB (test) {
 	const good_buffer = Buffer.from([0x00, 0x52, 0x45, 0x53, 0, 0, 0,
 		packet_types.NO_JOB, 0, 0, 0, 0]);
 	this.g.on ('NO_JOB', function(){
@@ -217,24 +229,26 @@ exports.testNO_JOB = function(test){
 	});
 	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
-};
+})
 
-exports.testSTATUS_RES = function(test){
+
+tap.test(function testSTATUS_RES (test) {
 	const good_buffer = Buffer.from([0x00, 0x52, 0x45, 0x53, 0, 0, 0,
 		packet_types.STATUS_RES, 0x00, 0x00, 0x00, 0x11, 0x48, 0x3a, 0x6d,
 		0x69, 0x6b, 0x65, 0x3a, 0x39, 0x39, 0x00, 0x31, 0x00, 0x30, 0x00, 0x30,
 		0x00, 0x30]);
-	this.g.on ('STATUS_RES', function(job){
+	this.g.on ('STATUS_RES', function(job) {
 		test.equal(job.handle, 'H:mike:99');
-		test.equal(job.known, 1);
-		test.equal(job.running, 0);
-		test.equal(job.percent_done_num, 0);
+		test.equal(job.known, '1');
+		test.equal(job.running, '0');
+		test.equal(job.percent_done_num, '0');
 		test.equal(job.percent_done_den, 48);
 		test.done();
 	});
 	let packet = this.g._decodePacket(good_buffer);
 	this.g._handlePacket(packet);
-};
+})
+
 
 //console.log ('wind', good_buffer.toString());
 // NO_JOB        00 52 45 53 00 00 00 0a 00 00 00 00
