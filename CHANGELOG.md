@@ -1,3 +1,8 @@
+# 2.1.0
+* move from nodeunit to tap
+* style tweaks
+* use const instead of let in more places
+
 # 2.0.5
 * move away from the deprecated Buffer constructor node API
 * update examples, removing leftover bits of coffeescript
