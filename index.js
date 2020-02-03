@@ -120,7 +120,8 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
 
   // submit a job to the gearman server
   // @param options supported options are: id, bg, payload
-  const submitJob = function(func_name, data=null, options={}) {
+  // @param callback Function to call after the job has been submitted
+  const submitJob = function(func_name, data=null, options={}, callback=null) {
     if (typeof(func_name) !== 'string')
       throw new Error('function name must be a string')
 
@@ -169,7 +170,7 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
       buffer()
 
     let job = _encodePacket(packet_type, payload, options.encoding)
-    _send(job, options.encoding)
+    _send(job, options.encoding, callback)
   }
 
   // public gearman worker functions
@@ -578,10 +579,10 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   }
 
   // common socket I/O
-  const _send = function (data, encoding=null) {
+  const _send = function (data, encoding=null, callback=null) {
     if (!_connected)
       throw new Error('Cannot send packets before connecting. Please connect first.')
-    _conn.write(data, encoding)
+    _conn.write(data, encoding, callback)
   }
 
   // common send function. send a packet with 1 string
