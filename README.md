@@ -2,7 +2,8 @@
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/mreinstein/node-gearman.svg)](https://greenkeeper.io/)
 
-[![Build Status](https://travis-ci.org/mreinstein/node-gearman.svg?branch=master)](https://travis-ci.org/mreinstein/node-gearman)
+![tests](https://github.com/mreinstein/node-gearman/actions/workflows/main.yml/badge.svg)
+
 
 ### pros:
 
