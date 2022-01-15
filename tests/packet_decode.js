@@ -6,15 +6,15 @@ const put          = require('put')
 const tap          = require('tap')
 
 
-tap.beforeEach(function(done) {
+tap.beforeEach(function(test) {
 	this.g = gearman('127.0.0.1', 4730, { exposeInternals: true })
-	done()
+	//done()
 })
 
-tap.afterEach(function(done) {
+tap.afterEach(function(test) {
 	this.g.close()
-  this.g = null
-	done()
+    this.g = null
+	//done()
 })
 
 
@@ -43,7 +43,7 @@ tap.test(function testInvalidInputBuffer (test) {
 		this.g._decodePacket(0o023)
 	})
 
-	test.done()
+	test.end()
 })
 
 
@@ -62,7 +62,7 @@ tap.test(function testMagicHeader (test) {
 	result = this.g._decodePacket(good_buffer1)
 	test.equal(result.type, packet_types.RESET_ABILITIES, 'RES magic header fails')
 
-	test.done()
+	test.end()
 })
 
 
@@ -79,7 +79,7 @@ tap.test(function testInvalidPacketType (test) {
 		this.g._decodePacket(bad_buffer)
 	})
 
-	test.done()
+	test.end()
 })
 
 
@@ -94,7 +94,7 @@ tap.test(function testValidPacketType (test) {
 		test.equal(result.type, p_type, 'packet type ' + p_type + ' failed to decode')
 	}
 
-	test.done()
+	test.end()
 })
 
 
@@ -111,7 +111,7 @@ tap.test(function testInvalidPacketSize (test) {
 		this.g._decodePacket(bad_buffer)
 	})
 
-	test.done()
+	test.end()
 })
 
 
@@ -128,7 +128,7 @@ tap.test(function testValidPacketSize (test) {
 		this.g._decodePacket(bad_buffer)
 	})
 
-	test.done()
+	test.end()
 })
 
 
@@ -146,7 +146,7 @@ tap.test(function testParsePacket (test) {
 	result = this.g._parsePacket(good_buffer, '8')
 	test.equal(result[0], 116)
 
-	test.done()
+	test.end()
 })
 
 
@@ -154,7 +154,7 @@ tap.test(function testNOOP (test) {
 	const good_buffer = Buffer.from([0x00, 0x52, 0x45, 0x53, 0, 0, 0,
 		packet_types.NOOP, 0, 0, 0, 0])
 	this.g.on ('NOOP', function(){
-		test.done()
+		test.end()
 	})
 	let packet = this.g._decodePacket(good_buffer)
 	this.g._handlePacket(packet)
@@ -168,7 +168,7 @@ tap.test(function testJOB_CREATED (test) {
 
 	this.g.on ('JOB_CREATED', function(job_handle){
 		test.equal (job_handle, 'H:mike:77')
-		test.done()
+		test.end()
 	})
 	let packet = this.g._decodePacket(good_buffer)
 	this.g._handlePacket(packet)
@@ -185,7 +185,7 @@ tap.test(function testJOB_ASSIGN (test) {
 		test.equal(job.func_name, 'upper')
 		test.equal(job.handle, 'H:mike:77')
 		test.equal(job.payload.toString(), 'Hello, World!')
-		test.done()
+		test.end()
 	})
 	let packet = this.g._decodePacket(good_buffer)
 	this.g._handlePacket(packet)
@@ -200,7 +200,7 @@ tap.test(function testWORK_COMPLETE (test) {
 	this.g.on ('WORK_COMPLETE', function(job){
 		test.equal(job.handle, 'H:mike:77')
 		test.equal(job.payload.toString(), 'HELLO, WORLD!')
-		test.done()
+		test.end()
 	})
 	let packet = this.g._decodePacket(good_buffer)
 	this.g._handlePacket(packet)
@@ -214,7 +214,7 @@ tap.test(function testECHO_RES (test) {
 		0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x73])
 	this.g.on ('ECHO_RES', function(payload){
 		test.equal(payload.toString(), 'deadlines and commitments')
-		test.done()
+		test.end()
 	})
 	let packet = this.g._decodePacket(good_buffer)
 	this.g._handlePacket(packet)
@@ -225,7 +225,7 @@ tap.test(function testNO_JOB (test) {
 	const good_buffer = Buffer.from([0x00, 0x52, 0x45, 0x53, 0, 0, 0,
 		packet_types.NO_JOB, 0, 0, 0, 0])
 	this.g.on ('NO_JOB', function(){
-		test.done()
+		test.end()
 	})
 	let packet = this.g._decodePacket(good_buffer)
 	this.g._handlePacket(packet)
@@ -243,7 +243,7 @@ tap.test(function testSTATUS_RES (test) {
 		test.equal(job.running, '0')
 		test.equal(job.percent_done_num, '0')
 		test.equal(job.percent_done_den, 48)
-		test.done()
+		test.end()
 	})
 	let packet = this.g._decodePacket(good_buffer)
 	this.g._handlePacket(packet)

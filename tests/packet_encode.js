@@ -6,16 +6,16 @@ const put          = require('put')
 const tap          = require('tap')
 
 
-tap.beforeEach(function(done) {
+tap.beforeEach(function(test) {
   this.g = gearman('127.0.0.1', 4730, { exposeInternals: true })
-  done()
+  //test.end()
 })
 
 
-tap.afterEach(function(done) {
+tap.afterEach(function(test) {
   this.g.close()
   this.g = null
-  done()
+  //test.end()
 })
 
 
@@ -35,7 +35,7 @@ tap.test(function testEncodeReturnsBuffer (test) {
 	const f = this.g._encodePacket(packet_types.CAN_DO, null, 'ascii')
 	test.ok(Buffer.isBuffer(f), 'passing null payload fails')
 
-	test.done()
+	test.end()
 })
 
 
@@ -60,7 +60,7 @@ tap.test(function testInvalidPacketType (test) {
 		this.g._encodePacket(undefined_var)
 	})
 
-	test.done()
+	test.end()
 })
 
 
@@ -71,14 +71,14 @@ tap.test(function testValidPacketType (test) {
 		let h = this.g._encodePacket(p_type)
 		test.ok(Buffer.isBuffer(h), 'packet type '+ p_type +' fails')
 	}
-    test.done()
+    test.end()
 })
 
 
 tap.test(function testPacketLength (test) {
   const b = this.g._encodePacket(packet_types.CAN_DO, '')
   test.equal(b.length, 12, 'packet length is wrong for encoded CAN_DO packet')
-  test.done()
+  test.end()
 })
 
 
@@ -88,7 +88,7 @@ tap.test(function testCAN_DO (test) {
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,1,0,0,0,13, 0x74, 0x65, 0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e])
   test.ok( b.equals(data), 'encoded CAN_DO packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -98,7 +98,7 @@ tap.test(function testCANT_DO (test) {
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,2,0,0,0,13, 0x74, 0x65, 0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e])
   test.ok( b.equals(data), 'encoded CANT_DO packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -108,7 +108,7 @@ tap.test(function testRESET_ABILITIES (test) {
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,3,0,0,0,0])
   test.ok( b.equals(data), 'encoded RESET_ABILITIES packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -116,7 +116,7 @@ tap.test(function testPRE_SLEEP (test){
 	const b = this.g._encodePacket(packet_types.PRE_SLEEP)
 	const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,4,0,0,0,0])
   test.ok( b.equals(data), 'encoded PRE_SLEEP packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -140,7 +140,7 @@ tap.test(function testSUBMIT_JOB (test) {
   	 0x00, 0x74, 0x65, 0x73, 0x74, 0x20, 0x70, 0x61, 0x79, 0x6c, 0x6f,
   	 0x61, 0x64])
   test.ok( b.equals(data), 'encoded SUBMIT_JOB packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -150,7 +150,7 @@ tap.test(function testGRAB_JOB (test) {
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,9,0,0,0,0])
   test.ok( b.equals(data), 'encoded GRAB_JOB packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -173,7 +173,7 @@ tap.test(function testWORK_STATUS (test) {
    0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c,
    0x65, 0x00, 0x32, 0x00, 0x31, 0x30, 0x30])
   test.ok( b.equals(data), 'encoded WORK_STATUS packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -194,7 +194,7 @@ tap.test(function testWORK_COMPLETE (test) {
   0x65, 0x00, 0x74, 0x65, 0x73, 0x74, 0x20, 0x77, 0x6f, 0x72, 0x6b, 0x20,
   0x72, 0x65, 0x73, 0x75, 0x6c, 0x74])
   test.ok( b.equals(data), 'encoded WORK_COMPLETE packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -210,7 +210,7 @@ tap.test(function testWORK_FAIL (test) {
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0, 14, 0, 0, 0, 15, 0x74, 0x65,
   0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c, 0x65 ])
   test.ok( b.equals(data), 'encoded WORK_FAIL packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -223,7 +223,7 @@ tap.test(function testGET_STATUS (test) {
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0, 15, 0, 0, 0, 15, 0x74, 0x65,
   0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c, 0x65 ])
   test.ok( b.equals(data), 'encoded GET_STATUS packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -236,7 +236,7 @@ tap.test(function testECHO_REQ (test) {
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0, 16, 0, 0, 0, 12, 0x48,
   0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21 ])
   test.ok( b.equals(data), 'encoded ECHO_REQ packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -260,7 +260,7 @@ tap.test(function testSUBMIT_JOB_BG (test) {
   	 0x00, 0x74, 0x65, 0x73, 0x74, 0x20, 0x70, 0x61, 0x79, 0x6c, 0x6f,
   	 0x61, 0x64])
   test.ok( b.equals(data), 'encoded SUBMIT_JOB_BG packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -284,7 +284,7 @@ tap.test(function testSUBMIT_JOB_HIGH (test) {
   	 0x00, 0x74, 0x65, 0x73, 0x74, 0x20, 0x70, 0x61, 0x79, 0x6c, 0x6f,
   	 0x61, 0x64])
   test.ok( b.equals(data), 'encoded SUBMIT_JOB_HIGH packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -297,7 +297,7 @@ tap.test(function testSET_CLIENT_ID (test) {
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0, 22, 0, 0, 0, 14, 0x74, 0x65,
   0x73, 0x74, 0x20, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x20, 0x69, 0x64 ])
   test.ok( b.equals(data), 'encoded SET_CLIENT_ID packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -316,7 +316,7 @@ tap.test(function testCAN_DO_TIMEOUT (test) {
    0x73, 0x74, 0x20, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x00,
    0x00, 0x00, 0x07, 0xd0 ])
   test.ok( b.equals(data), 'encoded CAN_DO_TIMEOUT packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -326,7 +326,7 @@ tap.test(function testALL_YOURS (test) {
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0,24,0,0,0,0])
   test.ok( b.equals(data), 'encoded ALL_YOURS packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -347,7 +347,7 @@ tap.test(function testWORK_EXCEPTION (test) {
    0x65, 0x00, 0x74, 0x65, 0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68,
    0x61, 0x6e, 0x64, 0x6c, 0x65 ])
   test.ok( b.equals(data), 'encoded WORK_EXCEPTION packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -360,7 +360,7 @@ tap.test(function testOPTION_REQ (test) {
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0, 26, 0, 0, 0, 10, 0x65, 0x78,
   	0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73 ])
   test.ok( b.equals(data), 'encoded OPTION_REQ packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -381,7 +381,7 @@ tap.test(function testWORK_DATA (test) {
    0x65, 0x00, 0x70, 0x61, 0x72, 0x74, 0x69, 0x61, 0x6c, 0x20, 0x77, 0x6f,
    0x72, 0x6b ])
   test.ok( b.equals(data), 'encoded WORK_DATA packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -401,7 +401,7 @@ tap.test(function testWORK_WARNING (test) {
    0x73, 0x74, 0x20, 0x6a, 0x6f, 0x62, 0x20, 0x68, 0x61, 0x6e, 0x64, 0x6c,
    0x65, 0x00, 0x74, 0x65, 0x73, 0x74, 0x20, 0x77, 0x61, 0x72, 0x6e, 0x69, 0x6e, 0x67 ])
   test.ok( b.equals(data), 'encoded WORK_WARNING packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -411,7 +411,7 @@ tap.test(function testGRAB_JOB_UNIQ (test) {
 
   const data = Buffer.from([0,0x52,0x45,0x51,0,0,0, 30, 0, 0, 0, 0 ])
   test.ok( b.equals(data), 'encoded GRAB_JOB_UNIQ packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -435,7 +435,7 @@ tap.test(function testSUBMIT_JOB_HIGH_BG (test) {
   	 0x00, 0x74, 0x65, 0x73, 0x74, 0x20, 0x70, 0x61, 0x79, 0x6c, 0x6f,
   	 0x61, 0x64])
   test.ok( b.equals(data), 'encoded SUBMIT_JOB_HIGH_BG packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -459,7 +459,7 @@ tap.test(function testSUBMIT_JOB_LOW (test) {
   	 0x00, 0x74, 0x65, 0x73, 0x74, 0x20, 0x70, 0x61, 0x79, 0x6c, 0x6f,
   	 0x61, 0x64])
   test.ok( b.equals(data), 'encoded SUBMIT_JOB_LOW packet is malformed')
-  test.done()
+  test.end()
 })
 
 
@@ -483,5 +483,5 @@ tap.test(function testSUBMIT_JOB_LOW_BG (test) {
   	 0x00, 0x74, 0x65, 0x73, 0x74, 0x20, 0x70, 0x61, 0x79, 0x6c, 0x6f,
   	 0x61, 0x64])
   test.ok( b.equals(data), 'encoded SUBMIT_JOB_LOW_BG packet is malformed')
-  test.done()
+  test.end()
 })

@@ -4,15 +4,15 @@ const packetFactory = require('../lib/packet-factory')
 const tap           = require('tap')
 
 
-tap.beforeEach(function(done) {
+tap.beforeEach(function(test) {
 	this.g = packetFactory()
-	done()
+	//done()
 })
 
 
-tap.afterEach(function(done) {
+tap.afterEach(function(test) {
 	this.g = null
-	done()
+	//done()
 })
 
 
@@ -21,7 +21,7 @@ tap.test(function testMultipleAddBytesSize (test) {
 	this.g.addBytes(good_buffer)
 	this.g.addBytes(good_buffer)
 	test.equal(8, this.g.getBuffer().length)
-	test.done()
+	test.end()
 })
 
 
@@ -45,7 +45,7 @@ tap.test(function testPacketAndPartial (test) {
 	test.ok(this.g.getBuffer().equals( Buffer.from([0x00, 0x52, 0x45, 0x53,
 		0x00, 0x00, 0x00, 0x08]) ) )
 
-	test.done()
+	test.end()
 })
 
 
@@ -59,5 +59,5 @@ tap.test(function testEmptyPacket (test) {
 		0x00, 0x00, 0x00, 0x00]) ) )
 
 	test.ok(this.g.getBuffer().equals( Buffer.from('') ) )
-	test.done()
+	test.end()
 })
