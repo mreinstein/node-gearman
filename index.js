@@ -39,6 +39,10 @@ module.exports = function gearman(host='127.0.0.1', port=4730, options={}) {
   if (options && options.timeout != null) {
     _conn.setTimeout(options.timeout)
   }
+  
+  if (options && options.KeepAlive != null) {
+    _conn.setKeepAlive(options.KeepAlive)
+  }
 
   _conn.on('data', function (chunk) {
     // add the stream of incoming bytes to the packet factory
