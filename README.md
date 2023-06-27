@@ -61,7 +61,7 @@ client.connect(function() {
 ```javascript
 const gearman = require('gearman')
 
-let worker = gearman('127.0.0.1', 4730)
+let worker = gearman('127.0.0.1', 4730, {KeepAlive: true}) // set KeepAlive true, so worker doesn't get disconnected by no traffic
 
 // handle jobs assigned by the server
 worker.on('JOB_ASSIGN', function(job) {
